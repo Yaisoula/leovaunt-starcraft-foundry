@@ -1,0 +1,54 @@
+name: Publish Foundry VTT System
+on:
+  push:
+    tags:
+      - 'v*'
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+      - name: Package release and validate version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, zipfile
+          tag = os.environ["TAG"]
+          path = pathlib.Path("system.json")
+          data = json.loads(path.read_text())
+          expected = "v" + data["version"]
+          if tag != expected:
+              raise SystemExit(f"Tag {tag!r} does not match system.json version {expected!r}")
+          base = "https://github.com/" + os.environ["GITHUB_REPOSITORY"]
+          data["url"] = base
+          data["manifest"] = base + "/releases/download/channel-v13/system.json"
+          data["download"] = base + f"/releases/download/{tag}/leovaunt-starcraft.zip"
+          path.write_text(json.dumps(data, indent=2) + "\n")
+          exclusions = (".git/", ".github/")
+          files = [p for p in pathlib.Path(".").rglob("*") if p.is_file()
+                   and not any(str(p).startswith(prefix) for prefix in exclusions)
+                   and p.name != "leovaunt-starcraft.zip"]
+          with zipfile.ZipFile("leovaunt-starcraft.zip", "w", zipfile.ZIP_DEFLATED) as archive:
+              for p in files:
+                  archive.write(p, str(p))
+          print(f"Packaged {len(files)} files for {tag}")
+          PY
+      - name: Publish versioned release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" system.json leovaunt-starcraft.zip --title "$TAG" --notes "Foundry v13 StarCraft system $TAG" --prerelease
+      - name: Create or update stable manifest channel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view channel-v13 >/dev/null 2>&1; then
+            gh release upload channel-v13 system.json --clobber
+          else
+            gh release create channel-v13 system.json --title "Foundry v13 update channel" --notes "Stable manifest URL for in-app update checks." --prerelease
+          fi
