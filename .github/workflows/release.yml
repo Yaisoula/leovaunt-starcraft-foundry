@@ -41,7 +41,6 @@ jobs:
       - name: Publish versioned release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_type == 'tag' && github.ref_name || 'v0.1.0-alpha.1' }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" system.json leovaunt-starcraft.zip --clobber
