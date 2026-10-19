@@ -1,4 +1,16 @@
 const f=foundry.data.fields;
+const number=(initial=0,min)=>new f.NumberField({required:true,nullable:false,initial,...(min===undefined?{}:{min})});
+const string=(initial="")=>new f.StringField({required:true,blank:true,initial});
 export class StarcraftItemDataModel extends foundry.abstract.TypeDataModel{
- static defineSchema(){return {description:new f.HTMLField({required:true,initial:""}),quantity:new f.NumberField({required:true,initial:1,min:0}),weight:new f.NumberField({required:true,initial:0,min:0}),equipped:new f.BooleanField({initial:false}),armorResistance:new f.NumberField({initial:0}),armorDefensePenalty:new f.NumberField({initial:0}),notes:new f.StringField({initial:""})};}
+ static defineSchema(){return {
+ description:new f.HTMLField({required:true,initial:""}),
+ quantity:number(1,0),weight:number(0,0),cost:number(0,0),tier:number(1,1),
+ equipped:new f.BooleanField({initial:false}),notes:string(),
+ // Weapon statistics, per Leovaunt Core Rulebook, Weapons chapter.
+ weaponClass:string(),hands:number(2,1),damage:number(),accuracy:number(),rateOfFire:string("Average"),
+ range:string("Medium"),shots:number(0,0),currentShots:number(0,0),ammunition:string(),
+ powerRating:number(),specialTraits:string(),
+ // Armor values are additional to the character's manual situational modifiers.
+ armorResistance:number(),armorDefensePenalty:number(),armorType:string(),armorRating:number()
+ }; }
 }
