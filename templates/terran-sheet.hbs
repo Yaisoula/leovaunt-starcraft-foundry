@@ -10,9 +10,40 @@
 <div class="hud-columns skill-grid"><section class="hud-panel"><h3>NON-PROWESS SKILLS</h3><p class="hud-help">Roll • Skill • Ranks • Focuses • Misc • Total (cap)</p><p class="hud-help">Base rank cap: {{derived.skillBaseMax}}. First focus adds 2, each additional focus adds 1.</p>{{#each skills}}<div class="hud-stat"><button type="button" data-action="rollSkill" data-skill="{{key}}">◈</button><span title="{{attribute}}">{{name}}</span><input type="number" name="system.skills.{{key}}.ranks" value="{{ranks}}" min="0" title="Ranks (maximum {{max}})"/><input type="number" name="system.skills.{{key}}.focus" value="{{focus}}" min="0" title="Number of skill focuses"/><input type="number" name="system.skills.{{key}}.misc" value="{{misc}}"/><b title="Maximum ranks: {{max}}" class="{{#if over}}hud-overcap{{/if}}">{{total}}</b><small>/{{max}}</small></div>{{/each}}</section>
 <section class="hud-panel"><h3>PROWESS SKILLS</h3>{{#each prowess}}<div class="hud-stat"><span>{{name}}</span><input type="number" name="system.prowess.{{key}}.ranks" value="{{ranks}}" min="0" title="Maximum ranks: {{max}}"/><input type="number" name="system.prowess.{{key}}.focus" value="{{focus}}" min="0" title="Number of focuses"/><small class="{{#if over}}hud-overcap{{/if}}">/{{max}}</small></div>{{/each}}</section></div>
 {{else if (eq tab "combat")}}
-<section class="hud-panel"><h3>COMBAT MODIFIERS</h3><div class="hud-mods"><label>Armor DR <input type="number" name="system.combat.armorResistance" value="{{s.combat.armorResistance}}"/></label><label>Armor Defense <input type="number" name="system.combat.armorDefensePenalty" value="{{s.combat.armorDefensePenalty}}"/></label><label>Psi Level <input type="number" name="system.combat.psiLevel" value="{{s.combat.psiLevel}}"/></label><label>Bonus HP <input type="number" name="system.combat.bonusHP" value="{{s.combat.bonusHP}}"/></label></div><p class="hud-help">Weapon attacks, ammunition, and wound management are planned for a later milestone.</p></section>
+<section class="hud-panel"><h3>COMBAT MODIFIERS</h3><div class="hud-mods"><label>Armor DR <input type="number" name="system.combat.armorResistance" value="{{s.combat.armorResistance}}"/></label><label>Armor Defense <input type="number" name="system.combat.armorDefensePenalty" value="{{s.combat.armorDefensePenalty}}"/></label><label>Psi Level <input type="number" name="system.combat.psiLevel" value="{{s.combat.psiLevel}}"/></label><label>Bonus HP <input type="number" name="system.combat.bonusHP" value="{{s.combat.bonusHP}}"/></label></div><p class="hud-help">Equipped armor contributes {{derived.equipment.armorResistance}} armor DR and {{derived.equipment.armorDefensePenalty}} to Defense. Armor DR/Defense fields above are additional manual modifiers. Weapon attacks and wound automation are still planned.</p></section>
 {{else if (eq tab "inventory")}}
-<section class="hud-panel"><h3>INVENTORY</h3><p class="hud-help">Weapon, armor, and gear management is planned for a later milestone. Existing embedded items are preserved.</p></section>
+<section class="hud-panel"><h3>EQUIPMENT LOADOUT</h3>
+<p class="hud-help">Equip items with checkboxes. Edit an item's statistics, then click Save on its row. Equipped armor updates Defense and Damage Resistance. Weapon statistics are recorded for upcoming attack automation.</p>
+<div class="hud-equipment-actions"><button type="button" data-action="createEquipment" data-item-type="weapon">+ Weapon</button><button type="button" data-action="createEquipment" data-item-type="armor">+ Armor</button><button type="button" data-action="createEquipment" data-item-type="gear">+ Gear</button></div>
+{{#each inventory}}
+<div class="hud-equipment-card" data-equipment-id="{{id}}">
+<div class="hud-equipment-heading"><label><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/> Equipped</label><strong>{{name}}</strong><small>{{type}}</small><button type="button" data-action="saveEquipment">Save</button><button type="button" data-action="removeEquipment" data-item-id="{{id}}" title="Delete this item">Delete</button></div>
+<div class="hud-equipment-fields">
+<label>Quantity<input data-item-field="quantity" type="number" min="0" value="{{quantity}}"/></label>
+<label>Weight (lb.)<input data-item-field="weight" type="number" min="0" step="any" value="{{weight}}"/></label>
+<label>Cost (credits)<input data-item-field="cost" type="number" min="0" value="{{cost}}"/></label>
+<label>Tier<input data-item-field="tier" type="number" min="1" value="{{tier}}"/></label>
+{{#if (eq type "weapon")}}
+<label>Weapon Class<input data-item-field="weaponClass" value="{{weaponClass}}" placeholder="Rifle, Pistol, Melee..."/></label>
+<label>Hands<input data-item-field="hands" type="number" min="1" value="{{hands}}"/></label>
+<label>Base Damage<input data-item-field="damage" type="number" value="{{damage}}"/></label>
+<label>Accuracy Mod.<input data-item-field="accuracy" type="number" value="{{accuracy}}"/></label>
+<label>Rate of Fire<select data-item-field="rateOfFire"><option value="{{rateOfFire}}">{{rateOfFire}}</option><option value="Slow">Slow</option><option value="Average">Average</option><option value="Fast">Fast</option><option value="Automatic">Automatic</option><option value="Full Automatic">Full Automatic</option><option value="Thrown">Thrown</option><option value="Planted">Planted</option></select></label>
+<label>Range<select data-item-field="range"><option value="{{range}}">{{range}}</option><option value="Melee">Melee</option><option value="Short">Short</option><option value="Medium">Medium</option><option value="Long">Long</option><option value="Distant">Distant</option><option value="Remote">Remote</option><option value="Thrown">Thrown</option></select></label>
+<label>Magazine Capacity<input data-item-field="shots" type="number" min="0" value="{{shots}}"/></label>
+<label>Ammo Remaining<input data-item-field="currentShots" type="number" min="0" value="{{currentShots}}"/></label>
+<label>Ammunition Type<input data-item-field="ammunition" value="{{ammunition}}"/></label>
+<label>Power Rating<input data-item-field="powerRating" type="number" value="{{powerRating}}"/></label>
+{{else if (eq type "armor")}}
+<label>Armor Type<input data-item-field="armorType" value="{{armorType}}" placeholder="Light, Heavy, Powered..."/></label>
+<label>Damage Resistance<input data-item-field="armorResistance" type="number" value="{{armorResistance}}"/></label>
+<label>Defense Penalty<input data-item-field="armorDefensePenalty" type="number" value="{{armorDefensePenalty}}"/></label>
+<label>Armor Rating<input data-item-field="armorRating" type="number" value="{{armorRating}}"/></label>
+{{/if}}
+<label class="hud-wide">Special Traits<input data-item-field="specialTraits" value="{{specialTraits}}" placeholder="Comma-separated traits"/></label>
+<label class="hud-wide">Notes<input data-item-field="notes" value="{{notes}}"/></label>
+</div></div>
+{{else}}<p class="hud-help">No equipment yet. Create a weapon, armor, or gear item above.</p>{{/each}}</section>
 {{else if (eq tab "talents")}}
 <section class="hud-panel"><h3>TALENTS & SPECIALIZATIONS</h3><p class="hud-help">Talent and specialization management is planned for a later milestone.</p></section>
 {{else if (eq tab "progression")}}
