@@ -1,8 +1,13 @@
 // Leovaunt Core Rulebook (2024), printed p.55. Medium heroic Terran defaults.
 export const ATTRIBUTE_LABELS={strength:"Strength",instinct:"Instinct",agility:"Agility",fortitude:"Fortitude",intelligence:"Intelligence",willpower:"Willpower"};
-export const SKILL_ATTRIBUTES={acrobatics:"agility",athletics:"strength",computers:"intelligence",endurance:"fortitude",influence:"willpower",leadership:"willpower",lore:"intelligence",medicine:"intelligence",perception:"instinct",pilot:"instinct",psionics:"willpower",science:"intelligence",stealth:"agility",survival:"fortitude",tactics:"intelligence"};
+export const SKILL_ATTRIBUTES={acrobatics:"agility",athletics:"strength",computers:"intelligence",endurance:"fortitude",influence:"willpower",leadership:"willpower",lore:"intelligence",medicine:"intelligence",perception:"instinct",pilot:"instinct",psionics:"willpower",science:"intelligence",stealth:"agility",survival:"instinct",tactics:"intelligence"};
 export const PROWESS_LABELS={defensiveTraining:"Defensive Training",durability:"Durability",melee:"Melee",mentalTraining:"Mental Training",ranged:"Ranged"};
 export const label=k=>k.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase());
+export function rankLimits(level,focus=0){
+ const l=Math.max(1,Math.min(30,Math.trunc(Number(level)||1)));
+ const first=Math.max(0,Math.trunc(Number(focus)||0));
+ return {attribute:Math.min(10,5+Math.floor(l/5)),skill:Math.min(12,3+Math.floor((l-1)/3))+(first?first+1:0)};
+}
 export function calculateTerran(s){
  const a=Object.fromEntries(Object.entries(s.attributes).map(([k,v])=>[k,Number(v.base)+Number(v.misc)]));
  const p=Object.fromEntries(Object.entries(s.prowess).map(([k,v])=>[k,Number(v.ranks)]));
@@ -21,5 +26,13 @@ export function calculateTerran(s){
  initiative:Math.max(a.instinct,Number(s.skills.tactics.ranks))+c.initiativeMisc,
  moraleBonus:h(p.mentalTraining)+h(a.willpower)+c.moraleMisc};
  const skillTotals=Object.fromEntries(Object.entries(SKILL_ATTRIBUTES).map(([k,attr])=>[k,Number(s.skills[k].ranks)+a[attr]+Number(s.skills[k].misc)+Number(s.skills[k].temp)]));
- return {attributes:a,prowess:p,computed,skillTotals};
+ const limits=Object.fromEntries(Object.entries(s.skills).map(([key,v])=>[key,rankLimits(s.level,v.focus).skill]));
+ const prowessLimits=Object.fromEntries(Object.entries(s.prowess).map(([key,v])=>[key,rankLimits(s.level,v.focus).skill]));
+ return {attributes:a,prowess:p,computed,skillTotals,limits,prowessLimits,attributeMax:rankLimits(s.level).attribute,skillBaseMax:rankLimits(s.level).skill,
+ skillPointsPerPurchase:3+h(a.intelligence),nextLevelXP:Math.min(30,Math.max(1,Number(s.level))) * 500,
+ warnings:[
+ ...Object.entries(a).filter(([key,value])=>value>rankLimits(s.level).attribute).map(([key])=>label(key)+" exceeds the normal attribute cap"),
+ ...Object.entries(s.skills).filter(([key,v])=>Number(v.ranks)>limits[key]).map(([key])=>label(key)+" exceeds maximum skill ranks"),
+ ...Object.entries(s.prowess).filter(([key,v])=>Number(v.ranks)>prowessLimits[key]).map(([key])=>label(key)+" exceeds maximum skill ranks")
+ ]};
 }
