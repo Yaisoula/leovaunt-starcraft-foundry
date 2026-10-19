@@ -1,0 +1,44 @@
+{
+  "id": "leovaunt-starcraft",
+  "title": "Leovaunt StarCraft RPG (Unofficial)",
+  "description": "Unofficial Foundry v13 system — Terran character HUD alpha.",
+  "version": "0.1.0-alpha.1",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "authors": [
+    {
+      "name": "Community fan project"
+    }
+  ],
+  "esmodules": [
+    "starcraft.mjs"
+  ],
+  "styles": [
+    "styles/starcraft.css"
+  ],
+  "documentTypes": {
+    "Actor": {
+      "terran": {},
+      "zerg": {},
+      "protoss": {},
+      "npc": {}
+    },
+    "Item": {
+      "weapon": {},
+      "armor": {},
+      "gear": {},
+      "talent": {},
+      "ability": {}
+    }
+  },
+  "grid": {
+    "distance": 1,
+    "units": "square"
+  },
+  "primaryTokenAttribute": "resources.hp",
+  "url": "https://github.com/Yaisoula/leovaunt-starcraft-foundry",
+  "manifest": "https://github.com/Yaisoula/leovaunt-starcraft-foundry/releases/download/channel-v13/system.json",
+  "download": "https://github.com/Yaisoula/leovaunt-starcraft-foundry/releases/download/v0.1.0-alpha.1/leovaunt-starcraft.zip"
+}
