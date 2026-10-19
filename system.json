@@ -37,5 +37,8 @@
     "distance": 1,
     "units": "square"
   },
-  "primaryTokenAttribute": "resources.hp"
+  "primaryTokenAttribute": "resources.hp",
+  "url": "https://github.com/Yaisoula/leovaunt-starcraft-foundry",
+  "manifest": "https://github.com/Yaisoula/leovaunt-starcraft-foundry/releases/download/channel-v13/system.json",
+  "download": "https://github.com/Yaisoula/leovaunt-starcraft-foundry/releases/download/v0.1.0-alpha.1/leovaunt-starcraft.zip"
 }
