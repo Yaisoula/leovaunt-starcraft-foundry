@@ -12,9 +12,9 @@ jobs:
     steps:
       - name: Check out tagged source
         uses: actions/checkout@v4
+      - name: Determine release tag
+        run: echo "TAG=v$(python3 -c 'import json; print(json.load(open("system.json"))["version"])')" >> "$GITHUB_ENV"
       - name: Package release and validate version
-        env:
-          TAG: ${{ github.ref_type == 'tag' && github.ref_name || 'v0.1.0-alpha.1' }}
         run: |
           python3 - <<'PY'
           import json, os, pathlib, zipfile
@@ -46,7 +46,7 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" system.json leovaunt-starcraft.zip --clobber
           else
-            gh release create "$TAG" system.json leovaunt-starcraft.zip --title "$TAG" --notes "Foundry v13 StarCraft system $TAG" --prerelease
+            gh release create "$TAG" system.json leovaunt-starcraft.zip --target "$GITHUB_SHA" --title "$TAG" --notes "Foundry v13 StarCraft system $TAG" --prerelease
           fi
       - name: Create or update stable manifest channel
         env:
