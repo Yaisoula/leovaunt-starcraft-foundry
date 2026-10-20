@@ -21,6 +21,27 @@ export async function recordWounds(actor,{count=1,location=null,source="Physical
  await actor.setFlag("leovaunt-starcraft","wounds",{points,history:history.slice(-100)});
  return {location:loc,points:points[loc],previousPoints:Number(old.points?.[loc]||0),rolls,dead:["core","vital","critical"].includes(loc)&&points[loc]>=5,maimed:["mobility","action"].includes(loc)&&points[loc]>=5};
 }
+/** Player-owned manual wound edits; does not apply fresh injury effects or thresholds. */
+export async function setWoundPoints(actor,location,value){
+ if(!actor.canUserModify(game.user,"update"))throw Error("No permission to update wounds");
+ if(!LOCATIONS.includes(location))throw Error("Invalid location");
+ const amount=Number(value);
+ if(!Number.isSafeInteger(amount)||amount<0||amount>100)throw Error("Wound points must be an integer from 0 to 100");
+ const state=woundState(actor),before=Number(state.points?.[location]||0);
+ if(before===amount)return {before,after:amount,changed:false};
+ await actor.setFlag("leovaunt-starcraft","wounds",{points:{...state.points,[location]:amount},history:[...(state.history??[]),{time:Date.now(),location,points:amount-before,source:"Manual player adjustment",override:true,by:game.user.id}].slice(-100)});
+ return {before,after:amount,changed:true};
+}
+export async function setBleedValue(actor,value){
+ if(!actor.canUserModify(game.user,"update"))throw Error("No permission to update Bleed");
+ const amount=Number(value);
+ if(!Number.isSafeInteger(amount)||amount<0||amount>1000)throw Error("Bleed must be an integer from 0 to 1000");
+ const previous=woundConditions(actor),before=Number(previous.bleed)||0;
+ if(before===amount)return {before,after:amount,changed:false};
+ await actor.setFlag("leovaunt-starcraft","woundConditions",{...previous,bleed:amount});
+ return {before,after:amount,changed:true};
+}
+
 export async function gmSetWoundPoints(actor,location,value){
  if(!game.user.isGM)throw Error("GM only");if(!LOCATIONS.includes(location))throw Error("Invalid location");
  const n=Number(value);if(!Number.isSafeInteger(n)||n<0||n>100)throw Error("Invalid points");
