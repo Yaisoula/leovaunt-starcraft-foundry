@@ -9,7 +9,7 @@ export class TerranDataModel extends foundry.abstract.TypeDataModel{
  attributes:new f.SchemaField(Object.fromEntries(["strength","instinct","agility","fortitude","intelligence","willpower"].map(k=>[k,new f.SchemaField({base:num(),misc:num()})]))),
  skills:new f.SchemaField(Object.fromEntries(SKILLS.map(k=>[k,new f.SchemaField({ranks:num(),misc:num(),temp:num(),focus:num()})]))),
  prowess:new f.SchemaField(Object.fromEntries(PROWESS.map(k=>[k,new f.SchemaField({ranks:num(),focus:num()})]))),
- resources:new f.SchemaField({hp:pair(),shields:pair(),fatigue:pair(),healing:pair(),credits:num(),characteristicPoints:num(),bankedPoints:num()}),
+ resources:new f.SchemaField({hp:pair(),shields:pair(),protection:num(),woundsPending:num(),fatigue:pair(),healing:pair(),credits:num(),characteristicPoints:num(),bankedPoints:num()}),
  combat:new f.SchemaField({shieldArmor:num(),armorDefensePenalty:num(),armorResistance:num(),psiLevel:num(),sizeDefense:num(),sizeToughness:num(),bonusHP:num(),defenseMisc:num(),toughnessMisc:num(),resolveMisc:num(),thresholdMisc:num(),resistanceMisc:num(),psionicMisc:num(),speedMisc:num(),shiftMisc:num(),initiativeMisc:num(),moraleMisc:num()}),notes:str()};}
 }
 export class DeferredDataModel extends foundry.abstract.TypeDataModel{static defineSchema(){return {notes:str()};}}
