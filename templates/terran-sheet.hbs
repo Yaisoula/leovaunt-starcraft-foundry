@@ -86,4 +86,4 @@
 {{/if}}
 </div>
 <footer class="hud-footer">ALPHA 3 • Derived statistics, level limits and focuses are calculated. Warning-only caps; advanced automation in development.</footer>
-</section>
+<section class="hud-panel sc-wounds"><h3>CRIPPLING WOUNDS</h3><p class="hud-help">Resolve pending wounds after damage. Standard attacks roll one location for all wound points. Immediate effects, ongoing penalties, maiming and death require GM adjudication.</p><button type="button" data-action="resolveWounds">Roll Pending Wound Location</button><div class="hud-npc-grid">{{#each woundRows}}<div class="sc-wound-row"><strong>{{label}}: {{points}}</strong><small>{{immediate}}</small><small>{{ongoing}}</small>{{#if ../isGM}}<input type="number" min="0" value="{{points}}" data-wound-points="{{key}}"/><button type="button" data-action="adjustWound" data-location="{{key}}">GM Set</button>{{/if}}</div>{{/each}}</div><h4>Recent Wound History</h4>{{#each woundHistory}}<p class="hud-help">{{location}}: {{points}} ({{source}}) {{#if override}}[GM override]{{/if}}</p>{{else}}<p class="hud-help">No recorded wounds.</p>{{/each}}</section></section>
