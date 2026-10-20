@@ -14,7 +14,7 @@ export function grabToughness(actor){
  if(actor.type==="npc")return n(actor.system.defenses.toughness);
  if(actor.type==="terran"){
   const derived=calculateTerran(actor.system,actor.items,woundState(actor).points);
-  return derived.computed.toughness+n(actor.system.combat.sizeToughness);
+  return derived.computed.toughness;
  }
  return null;
 }
