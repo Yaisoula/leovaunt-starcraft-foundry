@@ -1,4 +1,4 @@
-import {weaponAttack} from "../rules/weapon-attacks.mjs";
+import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {calculateTerran,ATTRIBUTE_LABELS,SKILL_ATTRIBUTES,PROWESS_LABELS,label} from "../rules/terran.mjs";
 export class TerranSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
  static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud"],position:{width:1000,height:760},window:{resizable:true,title:"Terran Personnel HUD"},form:{submitOnChange:true,closeOnSubmit:false,handler:TerranSheet.onFormSubmit},actions:{rollSkill:TerranSheet.rollSkill,rollAttribute:TerranSheet.rollAttribute,changeTab:TerranSheet.changeTab,toggleEquipped:TerranSheet.toggleEquipped,createEquipment:TerranSheet.createEquipment,saveEquipment:TerranSheet.saveEquipment,removeEquipment:TerranSheet.removeEquipment,toggleEquipmentDetails:TerranSheet.toggleEquipmentDetails,editEquipment:TerranSheet.editEquipment,toggleEquipmentMenu:TerranSheet.toggleEquipmentMenu,attackWeapon:TerranSheet.attackWeapon,reloadWeapon:TerranSheet.reloadWeapon,chooseItemImage:TerranSheet.chooseItemImage}};
@@ -31,10 +31,18 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const a=weaponAttack(this.document.system,item);
   if(!a.supported){ui.notifications.warn("This weapon firing mode is not yet automated.");return;}
   if(!a.canFire){ui.notifications.warn("Not enough ammunition for a standard attack. Reload or change weapons.");return;}
+  const input=target.closest(".hud-combat-weapon")?.querySelector("[data-target-defense]");
+  const defenseText=input?.value?.trim()??"";
+  const defense=defenseText===""?null:Number(defenseText);
+  if(defense!==null&&(!Number.isFinite(defense)||defense<0)){ui.notifications.warn("Target Defense must be a nonnegative number.");return;}
   const roll=await new Roll("1d20 + @bonus",{bonus:a.accuracy}).evaluate();
   if(a.requiresAmmo)await item.update({"system.currentShots":a.ammo-a.ammoNeeded});
   const safe=foundry.utils.escapeHTML(item.name);
-  await roll.toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:safe+" — standard "+a.skill+" attack ("+a.strikes+" strikes; base damage "+a.damage+"; ammo used "+a.ammoNeeded+"). Damage and special traits require manual resolution."});
+  let result=" — standard "+a.skill+" attack ("+a.strikes+" strikes; ammo used "+a.ammoNeeded+"). Pre-resistance base damage "+a.damage+".";
+  if(defense!==null){const outcome=resolveWeaponDamage(a,roll.total,defense);result+=outcome.hit?" HIT vs Defense "+defense+"; overage +"+outcome.overage+" (cap "+a.overageCap+"); damage "+outcome.damage+" before resistance.":" MISS vs Defense "+defense+"; no damage.";}
+  else result+=" Enter target Defense in the Combat tab for hit and attack-overage damage.";
+  result+=" Damage resistance, penetration, weapon traits and critical effects remain manual.";
+  await roll.toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:safe+result});
   await this.render();
  }
  static async reloadWeapon(event,target){
