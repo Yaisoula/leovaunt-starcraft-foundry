@@ -1,3 +1,4 @@
+import {setProneStatus} from "../rules/wounds.mjs";
 import {disarmAttackBonus,disarmTargetToughness,disarmResult,pushResult} from "../rules/disarm.mjs";
 import {chargeAttackModifiers,chargingState,setChargingDefense} from "../rules/charging.mjs";
 import {permanentWoundState,applyWoundThreshold,gmSetDeceased,gmUpdatePermanentInjury} from "../rules/wounds.mjs";
@@ -7,7 +8,7 @@ import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {targetProfile,previewPhysicalDamage,attackDetailHtml,traitsForWeapon} from "../rules/targeting.mjs";
 import {resolvePhysicalDamage} from "../rules/damage.mjs";
 export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,disarmWeapon:NpcSheet.disarmWeapon,pushTarget:NpcSheet.pushTarget,toggleChargingDefense:NpcSheet.toggleChargingDefense,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,disarmWeapon:NpcSheet.disarmWeapon,pushTarget:NpcSheet.pushTarget,knockDownTarget:NpcSheet.knockDownTarget,toggleChargingDefense:NpcSheet.toggleChargingDefense,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/npc-sheet.hbs"}};
  async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,effectiveDefenses:{defense:this.document.system.defenses.defense-actorWoundPenalties(this.document).defense-(chargingState(this.document)?2:0),damageResistance:Math.max(0,this.document.system.defenses.damageResistance-actorWoundPenalties(this.document).damageResistance)},woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),permanentWounds:permanentWoundState(this.document),chargingDefense:chargingState(this.document),isGM:game.user.isGM,woundConditions:woundConditions(this.document),items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i,woundState(this.document).points),range:i.system.range,rate:i.system.rateOfFire}))};}
  async _onRender(context,options){await super._onRender(context,options);const root=this.element,chargeBox=root?.querySelector("[data-npc-charge]"),moveBox=root?.querySelector("[data-npc-action-move]");const updatePreview=()=>{root?.querySelectorAll("[data-npc-weapon-preview]").forEach(row=>{const updatePreview=()=>{const charge=chargeBox?.checked===true,move=moveBox?.checked===true;const accuracy=Number(row.dataset.baseAccuracy)||0,damage=Number(row.dataset.baseDamage)||0;const a=row.querySelector("[data-preview-accuracy]"),d=row.querySelector("[data-preview-damage]");if(a)a.textContent=String(accuracy+(charge?5:move?-2:0));if(d)d.textContent=String(damage+(charge&&row.dataset.melee==="true"?10:0));};});};for(const box of [chargeBox,moveBox])box?.addEventListener("change",()=>{if(box.checked){const other=box===chargeBox?moveBox:chargeBox;if(other)other.checked=false;}updatePreview();});updatePreview();}
@@ -169,6 +170,36 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
   const result=pushResult(roll.total,tough);
   const name=victim?.name??"Manual target";
   await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:esc(this.document.name)+" — Push",content:'<div class="sc-attack-details"><strong>'+(result.success?"SUCCESS":"FAILURE")+'</strong> — Push vs '+esc(name)+'<p>Special attack: '+roll.total+' vs Toughness '+result.dc+' (margin '+result.margin+')</p><p>'+(result.success?"Push target back <strong>"+result.squares+" square"+(result.squares===1?"":"s")+"</strong>.":"Target is not pushed.")+'</p><small>Movement is GM-controlled. Push provokes an opportunity attack. Target must be no more than one size category larger.</small></div>'});
+ }
+
+ static async knockDownTarget(event,target){
+  if(!this.isEditable)return;
+  const selected=Array.from(game.user.targets);
+  if(selected.length>1){ui.notifications.warn("Target only one creature for Knock Down.");return;}
+  const victim=selected[0]?.actor??null;
+  const toughness=disarmTargetToughness(victim);
+  const attack=disarmAttackBonus(this.document,null);
+  const esc=foundry.utils.escapeHTML;
+  const chosen=await foundry.applications.api.DialogV2.prompt({
+   window:{title:"Knock Down — Special Combat Action"},
+   content:'<p>Knock Down is a standard action. Roll special attack vs Toughness. On success, the target becomes Prone. No damage is dealt.</p>'+
+    '<label>Target Toughness <input type="number" name="toughness" min="0" step="1" value="'+(toughness??"")+'" required/></label>'+
+    '<label>Additional modifier (size / situational) <input type="number" name="extra" step="1" value="0"/></label>'+
+    '<p>Special attack bonus: '+attack.base+' (Melee + half Strength + size). NPC size modifier must be entered manually if applicable.</p>',
+   ok:{label:"Roll Knock Down",callback:(event,button)=>({toughness:button.form.elements.toughness.value,extra:button.form.elements.extra.value})},
+   rejectClose:false
+  });
+  if(!chosen)return;
+  const tough=Number(chosen.toughness),extra=Number(chosen.extra);
+  if(chosen.toughness===""||!Number.isFinite(tough)||tough<0||!Number.isFinite(extra)){ui.notifications.warn("Enter valid Toughness and modifier values.");return;}
+  const roll=await new Roll("1d20 + @bonus",{bonus:attack.base+extra}).evaluate();
+  const success=roll.total>=tough;
+  let proneMessage="No target token was selected; GM must apply Prone manually.";
+  if(success&&victim){
+   try{await setProneStatus(victim,true);proneMessage="Prone applied automatically to "+esc(victim.name)+".";}
+   catch(error){proneMessage="Could not apply Prone automatically ("+esc(error.message)+"). GM must apply it manually.";ui.notifications.warn("Knock Down succeeded but Prone could not be applied automatically.");}
+  }
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:esc(this.document.name)+" — Knock Down",content:'<div class="sc-attack-details"><strong>'+(success?"SUCCESS":"FAILURE")+'</strong> — Knock Down vs '+esc(victim?.name??"Manual target")+'<p>Special attack: '+roll.total+' vs Toughness '+tough+'</p><p>'+(success?"Target knocked Prone. "+proneMessage:"Target remains standing.")+'</p><small>Standard action; no damage. GM adjudicates target eligibility.</small></div>'});
  }
 
 }
