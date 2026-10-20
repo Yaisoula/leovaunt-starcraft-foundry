@@ -1,12 +1,13 @@
+import {permanentWoundState,applyWoundThreshold,gmSetDeceased,gmUpdatePermanentInjury} from "../rules/wounds.mjs";
 import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints,woundConditions,applyImmediateWoundEffect,gmSetWoundCondition,applyBleedTick,droppableOneHandedItems,dropHeldItem} from "../rules/wounds.mjs";
 import {actorWoundPenalties} from "../rules/wounds.mjs";
 import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {targetProfile,previewPhysicalDamage,attackDetailHtml,traitsForWeapon} from "../rules/targeting.mjs";
 import {resolvePhysicalDamage} from "../rules/damage.mjs";
 export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/npc-sheet.hbs"}};
- async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,effectiveDefenses:{defense:this.document.system.defenses.defense-actorWoundPenalties(this.document).defense,damageResistance:Math.max(0,this.document.system.defenses.damageResistance-actorWoundPenalties(this.document).damageResistance)},woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),isGM:game.user.isGM,woundConditions:woundConditions(this.document),items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i,woundState(this.document).points),range:i.system.range,rate:i.system.rateOfFire}))};}
+ async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,effectiveDefenses:{defense:this.document.system.defenses.defense-actorWoundPenalties(this.document).defense,damageResistance:Math.max(0,this.document.system.defenses.damageResistance-actorWoundPenalties(this.document).damageResistance)},woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),permanentWounds:permanentWoundState(this.document),isGM:game.user.isGM,woundConditions:woundConditions(this.document),items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i,woundState(this.document).points),range:i.system.range,rate:i.system.rateOfFire}))};}
  static async save(event,form,formData){await this.document.update(formData.object);}
  static async rollNpcAttack(event,target){
   if(!this.isEditable)return;
@@ -38,6 +39,9 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
   const result=await recordWounds(actor,{count,source:"Pending physical damage"});
   await actor.update({"system.resources.woundsPending":0});
   const immediate=await applyImmediateWoundEffect(actor,result.location,count);
+  const threshold=await applyWoundThreshold(actor,result);
+  if(threshold.added)ui.notifications.warn(threshold.added+" permanent maiming injury record(s) created; GM must describe affected anatomy.");
+  if(threshold.deceased)ui.notifications.error(actor.name+" has reached a lethal wound threshold and is marked deceased.");
   if(immediate.dropItem)await this.chooseDroppedItem(actor);
   const rule=WOUND_RULES[result.location];await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor}),content:"<strong>"+foundry.utils.escapeHTML(actor.name)+"</strong>: "+count+" wound point(s) to "+result.location+" ("+(result.rolls[0]?.total??"GM")+")<p>Immediate: "+rule.immediate+"</p><p>Ongoing: "+rule.ongoing+"</p>"+(result.dead?"<strong>Death/destruction threshold reached — GM review required.</strong>":result.maimed?"<strong>Maiming threshold reached — GM review required.</strong>":"")});
   await this.render();
@@ -78,6 +82,25 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
    const name=await dropHeldItem(actor,chosen);
    await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor}),content:foundry.utils.escapeHTML(actor.name)+" drops "+foundry.utils.escapeHTML(name)+" due to an Action wound (unequipped, not deleted)."});
   }catch(err){ui.notifications.error(err.message);}
+ }
+
+ static async setDeceased(event,target){
+  if(!game.user.isGM)return;
+  const checked=this.element.querySelector('[data-permanent-deceased]')?.checked;
+  await gmSetDeceased(this.document,checked);await this.render();
+ }
+ static async editPermanentInjury(event,target){
+  if(!game.user.isGM)return;
+  const id=target.dataset.injuryId;
+  const description=this.element.querySelector('[data-permanent-injury="'+id+'"]')?.value;
+  try{await gmUpdatePermanentInjury(this.document,id,{description});await this.render();}catch(err){ui.notifications.error(err.message);}
+ }
+ static async removePermanentInjury(event,target){
+  if(!game.user.isGM)return;
+  const id=target.dataset.injuryId;
+  const yes=await foundry.applications.api.DialogV2.confirm({window:{title:"Remove Permanent Injury"},content:"Remove this permanent injury record? This will not change wound points."});
+  if(!yes)return;
+  try{await gmUpdatePermanentInjury(this.document,id,{remove:true});await this.render();}catch(err){ui.notifications.error(err.message);}
  }
 
 }
