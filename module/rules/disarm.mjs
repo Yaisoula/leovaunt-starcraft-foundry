@@ -23,3 +23,10 @@ export function disarmResult(rollTotal,toughness,targetHands){
  const dc=Number(toughness)+handBonus;
  return {success:rollTotal>=dc,dc,margin:rollTotal-dc};
 }
+
+/** Push succeeds against Toughness; each 5 points above adds one square. */
+export function pushResult(rollTotal,toughness){
+ const dc=Number(toughness);
+ const success=rollTotal>=dc;
+ return {success,dc,margin:rollTotal-dc,squares:success?1+Math.floor((rollTotal-dc)/5):0};
+}
