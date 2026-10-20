@@ -43,10 +43,11 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const defenseText=input?.value?.trim()??"";
   const defense=profile?Number(profile.defense):(defenseText===""?null:Number(defenseText));
   if(defense!==null&&(!Number.isFinite(defense)||defense<0)){ui.notifications.warn("Target Defense must be a nonnegative number.");return;}
-  const roll=await new Roll("1d20 + @bonus",{bonus:a.accuracy}).evaluate();
+  const actionMove=target.closest(".hud-combat-weapon")?.querySelector("[data-action-move]")?.checked===true;
+  const roll=await new Roll("1d20 + @bonus",{bonus:a.accuracy-(actionMove?2:0)}).evaluate();
   if(a.requiresAmmo)await item.update({"system.currentShots":a.ammo-a.ammoNeeded});
   const esc=foundry.utils.escapeHTML,traits=parsePhysicalTraits(item.system.specialTraits);
-  let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+'</strong><p>Strikes: '+a.strikes+' · Ammunition used: '+a.ammoNeeded+'</p>';
+  let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+(actionMove?' — Action Move (−2 accuracy; movement GM-controlled)':'')+'</strong><p>Strikes: '+a.strikes+' · Ammunition used: '+a.ammoNeeded+'</p>';
   if(defense!==null){
     const outcome=resolveWeaponDamage(a,roll.total,defense);
     breakdown+='<p><strong>'+(outcome.hit?'HIT':'MISS')+'</strong> vs Defense '+defense+(profile?' ('+esc(profile.actor.name)+')':'')+'</p>';
