@@ -1,3 +1,4 @@
+import {disarmAttackBonus,disarmTargetToughness,disarmResult} from "../rules/disarm.mjs";
 import {chargeAttackModifiers,chargingState,setChargingDefense} from "../rules/charging.mjs";
 import {permanentWoundState,applyWoundThreshold,gmSetDeceased,gmUpdatePermanentInjury} from "../rules/wounds.mjs";
 import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints,woundConditions,applyImmediateWoundEffect,gmSetWoundCondition,applyBleedTick,droppableOneHandedItems,dropHeldItem} from "../rules/wounds.mjs";
@@ -6,7 +7,7 @@ import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {targetProfile,previewPhysicalDamage,attackDetailHtml,traitsForWeapon} from "../rules/targeting.mjs";
 import {resolvePhysicalDamage} from "../rules/damage.mjs";
 export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,toggleChargingDefense:NpcSheet.toggleChargingDefense,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,disarmWeapon:NpcSheet.disarmWeapon,toggleChargingDefense:NpcSheet.toggleChargingDefense,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/npc-sheet.hbs"}};
  async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,effectiveDefenses:{defense:this.document.system.defenses.defense-actorWoundPenalties(this.document).defense-(chargingState(this.document)?2:0),damageResistance:Math.max(0,this.document.system.defenses.damageResistance-actorWoundPenalties(this.document).damageResistance)},woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),permanentWounds:permanentWoundState(this.document),chargingDefense:chargingState(this.document),isGM:game.user.isGM,woundConditions:woundConditions(this.document),items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i,woundState(this.document).points),range:i.system.range,rate:i.system.rateOfFire}))};}
  async _onRender(context,options){await super._onRender(context,options);const root=this.element,chargeBox=root?.querySelector("[data-npc-charge]"),moveBox=root?.querySelector("[data-npc-action-move]");const updatePreview=()=>{root?.querySelectorAll("[data-npc-weapon-preview]").forEach(row=>{const updatePreview=()=>{const charge=chargeBox?.checked===true,move=moveBox?.checked===true;const accuracy=Number(row.dataset.baseAccuracy)||0,damage=Number(row.dataset.baseDamage)||0;const a=row.querySelector("[data-preview-accuracy]"),d=row.querySelector("[data-preview-damage]");if(a)a.textContent=String(accuracy+(charge?5:move?-2:0));if(d)d.textContent=String(damage+(charge&&row.dataset.melee==="true"?10:0));};});};for(const box of [chargeBox,moveBox])box?.addEventListener("change",()=>{if(box.checked){const other=box===chargeBox?moveBox:chargeBox;if(other)other.checked=false;}updatePreview();});updatePreview();}
@@ -112,6 +113,35 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
  static async toggleChargingDefense(){
   if(!this.isEditable)return;
   try{await setChargingDefense(this.document,false);await this.render();}catch(err){ui.notifications.error(err.message);}
+ }
+
+ static async disarmWeapon(event,target){
+  if(!this.isEditable)return;
+  const item=this.document.items.get(target.dataset.itemId);
+  if(!item||item.type!=="weapon")return;
+  const selected=Array.from(game.user.targets);
+  if(selected.length>1){ui.notifications.warn("Target only one creature for Disarm.");return;}
+  const victim=selected[0]?.actor??null;
+  const toughness=disarmTargetToughness(victim);
+  const attack=disarmAttackBonus(this.document,item);
+  const esc=foundry.utils.escapeHTML;
+  const chosen=await foundry.applications.api.DialogV2.prompt({
+   window:{title:"Disarm — "+item.name},
+   content:'<p>Disarm is a standard action. Roll special attack against target Toughness plus the bonus for the item being held. No damage is dealt.</p>'+
+    '<label>Target Toughness <input type="number" name="toughness" min="0" step="1" value="'+(toughness??"")+'" required/></label>'+
+    '<label>Target item <select name="targetHands"><option value="1">One-handed (+2 Toughness)</option><option value="2">Two-handed (+5 Toughness)</option></select></label>'+
+    '<label>Additional attack modifier (size / situational) <input type="number" name="extra" step="1" value="0"/></label>'+
+    '<p>Your special attack bonus: '+attack.base+' + '+attack.handBonus+' (weapon) = '+attack.total+'. NPC size is not yet stored; add it above if needed.</p>',
+   ok:{label:"Roll Disarm",callback:(event,button)=>{const f=button.form;return {toughness:f.elements.toughness.value,targetHands:f.elements.targetHands.value,extra:f.elements.extra.value};}},
+   rejectClose:false
+  });
+  if(!chosen)return;
+  const tough=Number(chosen.toughness),extra=Number(chosen.extra);
+  if(chosen.toughness===""||!Number.isFinite(tough)||tough<0||!Number.isFinite(extra)){ui.notifications.warn("Enter valid Toughness and modifier values.");return;}
+  const roll=await new Roll("1d20 + @bonus",{bonus:attack.total+extra}).evaluate();
+  const result=disarmResult(roll.total,tough,chosen.targetHands);
+  const name=victim?.name??"Manual target";
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:esc(this.document.name)+" — Disarm ("+esc(item.name)+")",content:'<div class="sc-attack-details"><strong>'+(result.success?"SUCCESS":"FAILURE")+'</strong> — Disarm vs '+esc(name)+'<p>Special attack: '+roll.total+' vs Toughness '+result.dc+' (base '+tough+', held item +'+(Number(chosen.targetHands)===2?5:2)+')</p><p>'+(result.success?"No damage. The target drops the item at its feet. GM handles the item drop.":"Item remains held.")+'</p><small>Item selection, actual drop and unarmed grab-on-success-by-5 are not automated.</small></div>'});
  }
 
 }
