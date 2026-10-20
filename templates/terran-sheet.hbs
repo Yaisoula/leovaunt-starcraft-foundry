@@ -37,6 +37,9 @@
 .terran-hud .hud-credits-panel input{width:140px}
 .terran-hud .hud-inventory-category{margin:12px 0 20px}
 .terran-hud .hud-inventory-category>h4{margin:0 0 8px;padding:7px 10px;border-bottom:2px solid var(--color-border-light-primary,#58626b);text-transform:uppercase;letter-spacing:.06em}
+.terran-hud .hud-inventory-category .hud-inventory-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:2px solid var(--color-border-light-primary,#58626b);padding:6px 0;margin-bottom:8px}
+.terran-hud .hud-inventory-category .hud-inventory-heading h4{margin:0;border:0;padding:0;flex:1}
+.terran-hud .hud-inventory-category .hud-inventory-heading button{flex:none;margin-left:auto}
 </style>
 <header class="hud-header"><span>RAIDERS // PERSONNEL FILE</span><strong>TERRAN INTERFACE • ALPHA</strong></header>
 <div class="hud-identity hud-identity-simple hud-identity-telemetry"><img src="{{actor.img}}" alt="Portrait"/><div class="hud-identity-stats"><label>Character Name <input name="name" value="{{actor.name}}" placeholder="Enter character name"/></label><div class="hud-values"><div>Defense <b>{{derived.computed.defense}}</b></div><div>Toughness <b>{{derived.computed.toughness}}</b></div><div>Resolve <b>{{derived.computed.resolve}}</b></div><div>Damage Threshold <b>{{derived.computed.damageThreshold}}</b></div><div>Damage Resistance <b>{{derived.computed.damageResistance}}</b></div><div>Psionic Resistance <b>{{derived.computed.psionicResistance}}</b></div><div>Healing Threshold <b>{{derived.computed.healingThreshold}}</b></div><div>Move <b>{{derived.computed.moveSpeed}}</b></div><div>Shift <b>{{derived.computed.shiftSpeed}}</b></div><div>Initiative <b>{{derived.computed.initiative}}</b></div><div>Morale <b>{{derived.computed.moraleBonus}}</b></div></div></div></div>
@@ -72,10 +75,8 @@
 </section>
 {{else if (eq tab "inventory")}}
 <section class="hud-panel hud-credits-panel"><label><strong>Credits</strong> <input type="number" min="0" step="1" name="system.resources.credits" value="{{s.resources.credits}}" aria-label="Character credits"/></label></section>
-<section class="hud-panel"><h3>EQUIPMENT LOADOUT</h3>
-<p class="hud-help">Click an item to inspect its statistics. Right-click an item for Edit and Delete. Save closes its editor. Equipped armor updates Defense and Damage Resistance.</p>
-<div class="hud-equipment-actions"><button type="button" data-action="createEquipment" data-item-type="weapon">+ Weapon</button><button type="button" data-action="createEquipment" data-item-type="armor">+ Armor</button><button type="button" data-action="createEquipment" data-item-type="gear">+ Gear</button></div>
-<section class="hud-inventory-category"><h4>Weapons</h4>{{#each inventoryWeapons}}
+<section class="hud-panel hud-inventory-sections">
+<section class="hud-inventory-category"><div class="hud-inventory-heading"><h4>Weapons</h4><button type="button" data-action="createEquipment" data-item-type="weapon">+ Weapon</button></div>{{#each inventoryWeapons}}
 <div class="hud-equipment-card" data-equipment-id="{{id}}">
 <div class="hud-equipment-heading">
 <button type="button" class="hud-item-image" data-action="chooseItemImage" data-item-id="{{id}}" title="Choose item picture"><img src="{{img}}" alt="Image for {{name}}"/></button><label class="hud-equip-toggle" title="Equipped"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></label>
@@ -112,7 +113,7 @@
 <label class="hud-wide">Notes<input data-item-field="notes" value="{{notes}}"/></label>
 </fieldset>{{/if}}</div>
 {{else}}<p class="hud-help">No weapons yet.</p>{{/each}}</section>
-<section class="hud-inventory-category"><h4>Armor</h4>{{#each inventoryArmor}}
+<section class="hud-inventory-category"><div class="hud-inventory-heading"><h4>Armor</h4><button type="button" data-action="createEquipment" data-item-type="armor">+ Armo</button></div>{{#each inventoryArmor}}
 <div class="hud-equipment-card" data-equipment-id="{{id}}">
 <div class="hud-equipment-heading">
 <button type="button" class="hud-item-image" data-action="chooseItemImage" data-item-id="{{id}}" title="Choose item picture"><img src="{{img}}" alt="Image for {{name}}"/></button><label class="hud-equip-toggle" title="Equipped"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></label>
@@ -150,7 +151,7 @@
 <label class="hud-wide">Notes<input data-item-field="notes" value="{{notes}}"/></label>
 </fieldset>{{/if}}</div>
 {{else}}<p class="hud-help">No armor yet.</p>{{/each}}</section>
-<section class="hud-inventory-category"><h4>Gear</h4>{{#each inventoryGear}}
+<section class="hud-inventory-category"><div class="hud-inventory-heading"><h4>Gear</h4><button type="button" data-action="createEquipment" data-item-type="gear">+ Gear</button></div>{{#each inventoryGear}}
 <div class="hud-equipment-card" data-equipment-id="{{id}}">
 <div class="hud-equipment-heading">
 <button type="button" class="hud-item-image" data-action="chooseItemImage" data-item-id="{{id}}" title="Choose item picture"><img src="{{img}}" alt="Image for {{name}}"/></button><label class="hud-equip-toggle" title="Equipped"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></label>
