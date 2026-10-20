@@ -28,7 +28,7 @@
 <label class="hud-equip-toggle"><span class="hud-equip-checkbox"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></span><span>Equipped</span></label>
 <button type="button" class="hud-equipment-title" data-action="toggleEquipmentDetails" data-item-id="{{id}}" aria-expanded="{{expanded}}"><span class="hud-chevron">{{#if expanded}}▾{{else}}▸{{/if}}</span> {{name}}</button>
 <small>{{type}}</small>
-{{#if editing}}<button type="button" class="hud-equipment-primary-save" data-action="saveEquipment">Save</button>{{/if}}
+{{#if editing}}<button type="button" class="hud-equipment-primary-save" data-action="saveEquipment">Save</button><button type="button" data-action="editEquipment" data-item-id="{{id}}">Edit</button><button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button>{{/if}}
 <button type="button" class="hud-equipment-more" data-action="toggleEquipmentMenu" data-item-id="{{id}}" aria-label="Item options">⋯</button>
 </div>
 {{#if menuOpen}}<div class="hud-equipment-menu"><button type="button" data-action="editEquipment" data-item-id="{{id}}">Edit</button><button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button></div>{{/if}}
