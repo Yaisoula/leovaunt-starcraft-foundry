@@ -148,6 +148,11 @@ export async function applyWoundThreshold(actor,result){
  if(added||deceased!==state.deceased)await actor.setFlag("leovaunt-starcraft","permanentWounds",{deceased,injuries});
  return {added,deceased};
 }
+/** Freeform injury record, editable by actor owners; structured maiming injuries remain separate. */
+export async function setPermanentInjuryNotes(actor,notes){
+ if(!actor.canUserModify(game.user,"update"))throw Error("No permission to edit injury notes.");
+ await actor.setFlag("leovaunt-starcraft","permanentInjuryNotes",String(notes??"").slice(0,10000));
+}
 export async function gmSetDeceased(actor,value){
  if(!game.user.isGM)throw Error("GM only.");
  const state=permanentWoundState(actor);
