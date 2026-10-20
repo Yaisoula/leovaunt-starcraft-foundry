@@ -1,4 +1,4 @@
-import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints,woundConditions,applyImmediateWoundEffect,gmSetWoundCondition,applyBleedTick} from "../rules/wounds.mjs";
+import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints,woundConditions,applyImmediateWoundEffect,gmSetWoundCondition,applyBleedTick,droppableOneHandedItems,dropHeldItem} from "../rules/wounds.mjs";
 import {targetProfile,previewPhysicalDamage} from "../rules/targeting.mjs";
 import {resolvePhysicalDamage,parsePhysicalTraits} from "../rules/damage.mjs";
 import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
@@ -116,6 +116,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const result=await recordWounds(actor,{count,source:"Pending physical damage"});
   await actor.update({"system.resources.woundsPending":0});
   const immediate=await applyImmediateWoundEffect(actor,result.location,count);
+  if(immediate.dropItem)await this.chooseDroppedItem(actor);
   const rule=WOUND_RULES[result.location];await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor}),content:"<strong>"+foundry.utils.escapeHTML(actor.name)+"</strong>: "+count+" wound point(s) to "+result.location+" ("+(result.rolls[0]?.total??"GM")+")<p>Immediate: "+rule.immediate+"</p><p>Ongoing: "+rule.ongoing+"</p>"+(result.dead?"<strong>Death/destruction threshold reached — GM review required.</strong>":result.maimed?"<strong>Maiming threshold reached — GM review required.</strong>":"")});
   await this.render();
  }
@@ -138,6 +139,23 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const key=target.dataset.condition;
   const field=this.element.querySelector('[data-wound-condition="'+key+'"]');
   try{await gmSetWoundCondition(this.document,key,key==="prone"?field?.checked:field?.value);await this.render();}catch(err){ui.notifications.error(err.message);}
+ }
+
+ static async chooseDroppedItem(actor){
+  const items=droppableOneHandedItems(actor);
+  if(!items.length){ui.notifications.info("Action wound: no equipped one-handed items found. GM adjudication required.");return;}
+  const options=items.map(item=>'<option value="'+foundry.utils.escapeHTML(item.id)+'">'+foundry.utils.escapeHTML(item.name)+'</option>').join("");
+  const chosen=await foundry.applications.api.DialogV2.prompt({
+   window:{title:"Action Wound — Drop One-Handed Item"},
+   content:'<p>The attacker chooses one held one-handed item to drop. Cancel to leave inventory unchanged.</p><label>Item<select name="droppedItem">'+options+'</select></label>',
+   ok:{label:"Drop Item",callback:(event,button)=>button.form.elements.droppedItem.value},
+   rejectClose:false
+  });
+  if(!chosen)return;
+  try{
+   const name=await dropHeldItem(actor,chosen);
+   await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor}),content:foundry.utils.escapeHTML(actor.name)+" drops "+foundry.utils.escapeHTML(name)+" due to an Action wound (unequipped, not deleted)."});
+  }catch(err){ui.notifications.error(err.message);}
  }
 
 }
