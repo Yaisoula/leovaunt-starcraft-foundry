@@ -19,7 +19,7 @@ export async function recordWounds(actor,{count=1,location=null,source="Physical
  points[loc]=Math.max(0,Number(points[loc])||0)+n;
  history.push({time:Date.now(),location:loc,points:n,source,roll:roll?.total??null,override:gmOverride,by:game.user.id});
  await actor.setFlag("leovaunt-starcraft","wounds",{points,history:history.slice(-100)});
- return {location:loc,points:points[loc],rolls,dead:["core","vital","critical"].includes(loc)&&points[loc]>=5,maimed:["mobility","action"].includes(loc)&&points[loc]>=5};
+ return {location:loc,points:points[loc],previousPoints:Number(old.points?.[loc]||0),rolls,dead:["core","vital","critical"].includes(loc)&&points[loc]>=5,maimed:["mobility","action"].includes(loc)&&points[loc]>=5};
 }
 export async function gmSetWoundPoints(actor,location,value){
  if(!game.user.isGM)throw Error("GM only");if(!LOCATIONS.includes(location))throw Error("Invalid location");
@@ -104,4 +104,38 @@ export async function setProneStatus(actor,active){
  if(actor.statuses.has("prone")!==Boolean(active))await actor.toggleStatusEffect("prone",{active:Boolean(active)});
  const previous=woundConditions(actor);
  if(previous.prone!==Boolean(active))await actor.setFlag("leovaunt-starcraft","woundConditions",{...previous,prone:Boolean(active)});
+}
+
+/** Permanent consequences are independent of temporary wound points. GM may edit or reverse them. */
+export function permanentWoundState(actor){
+ const stored=actor.getFlag("leovaunt-starcraft","permanentWounds")??{};
+ return {deceased:Boolean(stored.deceased),injuries:Array.isArray(stored.injuries)?stored.injuries:[]};
+}
+export function newMaimingCount(previousPoints,newPoints){
+ return Math.max(0,Number(newPoints)-Math.max(4,Number(previousPoints)));
+}
+export async function applyWoundThreshold(actor,result){
+ if(!actor.canUserModify(game.user,"update"))throw Error("No permission to modify target.");
+ const state=permanentWoundState(actor);
+ const injuries=[...state.injuries];
+ let added=0;
+ if(["mobility","action"].includes(result.location)){
+  added=newMaimingCount(result.previousPoints,result.points);
+  for(let i=0;i<added;i++)injuries.push({id:foundry.utils.randomID(),location:result.location,description:"GM: specify maimed limb or affected structure",time:Date.now()});
+ }
+ const deceased=state.deceased||(["core","vital","critical"].includes(result.location)&&result.points>=5);
+ if(added||deceased!==state.deceased)await actor.setFlag("leovaunt-starcraft","permanentWounds",{deceased,injuries});
+ return {added,deceased};
+}
+export async function gmSetDeceased(actor,value){
+ if(!game.user.isGM)throw Error("GM only.");
+ const state=permanentWoundState(actor);
+ await actor.setFlag("leovaunt-starcraft","permanentWounds",{...state,deceased:Boolean(value)});
+}
+export async function gmUpdatePermanentInjury(actor,id,{description,remove=false}={}){
+ if(!game.user.isGM)throw Error("GM only.");
+ const state=permanentWoundState(actor);
+ if(!state.injuries.some(i=>i.id===id))throw Error("Injury not found.");
+ const injuries=remove?state.injuries.filter(i=>i.id!==id):state.injuries.map(i=>i.id===id?{...i,description:String(description??"").slice(0,500)}:i);
+ await actor.setFlag("leovaunt-starcraft","permanentWounds",{...state,injuries});
 }
