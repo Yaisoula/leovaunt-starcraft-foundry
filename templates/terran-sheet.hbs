@@ -32,6 +32,11 @@
 .terran-hud .hud-wound-cell{display:flex;align-items:center;justify-content:center;gap:5px;border-left:2px solid #3d3215;padding:4px;font-size:.75rem;font-weight:800;text-transform:uppercase;min-width:0}
 .terran-hud .hud-wound-cell input{width:44px!important;min-width:0!important;height:25px;text-align:center;background:#f8e5a5;color:#16130a}
 @media(max-width:740px){.terran-hud .hud-wounds-strip{grid-template-columns:repeat(3,minmax(0,1fr))}.terran-hud .hud-wounds-strip>strong{grid-column:1/-1}}
+.terran-hud .hud-credits-panel{display:flex;align-items:center;margin-bottom:10px}
+.terran-hud .hud-credits-panel label{display:flex;align-items:center;gap:12px;font-weight:700}
+.terran-hud .hud-credits-panel input{width:140px}
+.terran-hud .hud-inventory-category{margin:12px 0 20px}
+.terran-hud .hud-inventory-category>h4{margin:0 0 8px;padding:7px 10px;border-bottom:2px solid var(--color-border-light-primary,#58626b);text-transform:uppercase;letter-spacing:.06em}
 </style>
 <header class="hud-header"><span>RAIDERS // PERSONNEL FILE</span><strong>TERRAN INTERFACE • ALPHA</strong></header>
 <div class="hud-identity hud-identity-simple hud-identity-telemetry"><img src="{{actor.img}}" alt="Portrait"/><div class="hud-identity-stats"><label>Character Name <input name="name" value="{{actor.name}}" placeholder="Enter character name"/></label><div class="hud-values"><div>Defense <b>{{derived.computed.defense}}</b></div><div>Toughness <b>{{derived.computed.toughness}}</b></div><div>Resolve <b>{{derived.computed.resolve}}</b></div><div>Damage Threshold <b>{{derived.computed.damageThreshold}}</b></div><div>Damage Resistance <b>{{derived.computed.damageResistance}}</b></div><div>Psionic Resistance <b>{{derived.computed.psionicResistance}}</b></div><div>Healing Threshold <b>{{derived.computed.healingThreshold}}</b></div><div>Move <b>{{derived.computed.moveSpeed}}</b></div><div>Shift <b>{{derived.computed.shiftSpeed}}</b></div><div>Initiative <b>{{derived.computed.initiative}}</b></div><div>Morale <b>{{derived.computed.moraleBonus}}</b></div></div></div></div>
@@ -66,10 +71,48 @@
 <p class="hud-help">Crippling wound counts are recorded as pending; their locations, immediate effects and penalties require GM adjudication.</p>
 </section>
 {{else if (eq tab "inventory")}}
+<section class="hud-panel hud-credits-panel"><label><strong>Credits</strong> <input type="number" min="0" step="1" name="system.resources.credits" value="{{s.resources.credits}}" aria-label="Character credits"/></label></section>
 <section class="hud-panel"><h3>EQUIPMENT LOADOUT</h3>
 <p class="hud-help">Click an item to inspect its statistics. Right-click an item for Edit and Delete. Save closes its editor. Equipped armor updates Defense and Damage Resistance.</p>
 <div class="hud-equipment-actions"><button type="button" data-action="createEquipment" data-item-type="weapon">+ Weapon</button><button type="button" data-action="createEquipment" data-item-type="armor">+ Armor</button><button type="button" data-action="createEquipment" data-item-type="gear">+ Gear</button></div>
-{{#each inventory}}
+<section class="hud-inventory-category"><h4>Weapons</h4>{{#each inventoryWeapons}}
+<div class="hud-equipment-card" data-equipment-id="{{id}}">
+<div class="hud-equipment-heading">
+<button type="button" class="hud-item-image" data-action="chooseItemImage" data-item-id="{{id}}" title="Choose item picture"><img src="{{img}}" alt="Image for {{name}}"/></button><label class="hud-equip-toggle" title="Equipped"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></label>
+<button type="button" class="hud-equipment-title" data-action="toggleEquipmentDetails" data-item-id="{{id}}" aria-expanded="{{expanded}}"><span class="hud-chevron">{{#if expanded}}▾{{else}}▸{{/if}}</span> {{name}}</button>
+<label class="hud-item-quantity" title="Quantity"><span>Qty.</span><input type="number" min="0" step="1" value="{{quantity}}" data-quantity-item-id="{{id}}"/></label>
+{{#if editing}}<button type="button" class="hud-equipment-primary-save" data-action="saveEquipment">Save</button><button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button>{{/if}}
+<div class="hud-menu-anchor"><button type="button" class="hud-equipment-more" data-action="toggleEquipmentMenu" data-item-id="{{id}}" aria-label="Item options" aria-expanded="{{menuOpen}}">⋯</button>{{#if menuOpen}}<div class="hud-equipment-menu" role="group" aria-label="Item actions">{{#unless editing}}<button type="button" data-action="editEquipment" data-item-id="{{id}}">Edit</button>{{/unless}}<button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button></div>{{/if}}</div>
+</div>
+{{#if expanded}}
+{{#if editing}}<label class="hud-equipment-name">Item Name<input data-item-name type="text" value="{{name}}" placeholder="Name this item"/></label>{{/if}}
+<fieldset class="hud-equipment-fields" {{#unless editing}}disabled{{/unless}}>
+
+<label>Weight (lb.)<input data-item-field="weight" type="number" min="0" step="any" value="{{weight}}"/></label>
+<label>Cost (credits)<input data-item-field="cost" type="number" min="0" value="{{cost}}"/></label>
+<label>Tier<input data-item-field="tier" type="number" min="1" value="{{tier}}"/></label>
+{{#if (eq type "weapon")}}
+<label>Weapon Class<select data-item-field="weaponClass"><option value="{{weaponClass}}">{{weaponClass}}</option><option value="Pistol">Pistol</option><option value="Rifle">Rifle</option><option value="Heavy Weapon">Heavy Weapon</option><option value="Explosive">Explosive</option><option value="Melee">Melee</option></select></label>
+<label>Hands<input data-item-field="hands" type="number" min="1" value="{{hands}}"/></label>
+<label>Base Damage<input data-item-field="damage" type="number" value="{{damage}}"/></label>
+<label>Accuracy Mod.<input data-item-field="accuracy" type="number" value="{{accuracy}}"/></label>
+<label>Rate of Fire<select data-item-field="rateOfFire"><option value="{{rateOfFire}}">{{rateOfFire}}</option><option value="Slow">Slow</option><option value="Average">Average</option><option value="Fast">Fast</option><option value="Automatic">Automatic</option><option value="Full Automatic">Full Automatic</option><option value="Thrown">Thrown</option><option value="Planted">Planted</option></select></label>
+<label>Range<select data-item-field="range"><option value="{{range}}">{{range}}</option><option value="Melee">Melee Reach</option><option value="Short">Short — 6 squares</option><option value="Medium">Medium — 30 squares</option><option value="Long">Long — 60 squares</option><option value="Distant">Distant — 120 squares</option><option value="Remote">Remote — 300 squares</option></select></label>
+<label>Magazine Capacity<input data-item-field="shots" type="number" min="0" value="{{shots}}"/></label>
+<label>Ammo Remaining<input data-item-field="currentShots" type="number" min="0" value="{{currentShots}}"/></label>
+<label>Ammunition Type<input data-item-field="ammunition" value="{{ammunition}}"/></label>
+<label>Power Rating<input data-item-field="powerRating" type="number" value="{{powerRating}}"/></label>
+{{else if (eq type "armor")}}
+<label>Armor Type<input data-item-field="armorType" value="{{armorType}}" placeholder="Light, Heavy, Powered..."/></label>
+<label>Damage Resistance<input data-item-field="armorResistance" type="number" value="{{armorResistance}}"/></label>
+<label>Defense Penalty<input data-item-field="armorDefensePenalty" type="number" value="{{armorDefensePenalty}}"/></label>
+<label>Armor Rating<input data-item-field="armorRating" type="number" value="{{armorRating}}"/></label>
+{{/if}}
+<label class="hud-wide">Special Traits<input data-item-field="specialTraits" value="{{specialTraits}}" placeholder="Comma-separated traits"/></label>
+<label class="hud-wide">Notes<input data-item-field="notes" value="{{notes}}"/></label>
+</fieldset>{{/if}}</div>
+{{else}}<p class="hud-help">No weapons yet.</p>{{/each}}</section>
+<section class="hud-inventory-category"><h4>Armor</h4>{{#each inventoryArmor}}
 <div class="hud-equipment-card" data-equipment-id="{{id}}">
 <div class="hud-equipment-heading">
 <button type="button" class="hud-item-image" data-action="chooseItemImage" data-item-id="{{id}}" title="Choose item picture"><img src="{{img}}" alt="Image for {{name}}"/></button><label class="hud-equip-toggle" title="Equipped"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></label>
@@ -106,7 +149,45 @@
 <label class="hud-wide">Special Traits<input data-item-field="specialTraits" value="{{specialTraits}}" placeholder="Comma-separated traits"/></label>
 <label class="hud-wide">Notes<input data-item-field="notes" value="{{notes}}"/></label>
 </fieldset>{{/if}}</div>
-{{else}}<p class="hud-help">No equipment yet. Create a weapon, armor, or gear item above.</p>{{/each}}</section>
+{{else}}<p class="hud-help">No armor yet.</p>{{/each}}</section>
+<section class="hud-inventory-category"><h4>Gear</h4>{{#each inventoryGear}}
+<div class="hud-equipment-card" data-equipment-id="{{id}}">
+<div class="hud-equipment-heading">
+<button type="button" class="hud-item-image" data-action="chooseItemImage" data-item-id="{{id}}" title="Choose item picture"><img src="{{img}}" alt="Image for {{name}}"/></button><label class="hud-equip-toggle" title="Equipped"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></label>
+<button type="button" class="hud-equipment-title" data-action="toggleEquipmentDetails" data-item-id="{{id}}" aria-expanded="{{expanded}}"><span class="hud-chevron">{{#if expanded}}▾{{else}}▸{{/if}}</span> {{name}}</button>
+<small>{{type}}</small>
+<label class="hud-item-quantity" title="Quantity"><span>Qty.</span><input type="number" min="0" step="1" value="{{quantity}}" data-quantity-item-id="{{id}}"/></label>
+{{#if editing}}<button type="button" class="hud-equipment-primary-save" data-action="saveEquipment">Save</button><button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button>{{/if}}
+<div class="hud-menu-anchor"><button type="button" class="hud-equipment-more" data-action="toggleEquipmentMenu" data-item-id="{{id}}" aria-label="Item options" aria-expanded="{{menuOpen}}">⋯</button>{{#if menuOpen}}<div class="hud-equipment-menu" role="group" aria-label="Item actions">{{#unless editing}}<button type="button" data-action="editEquipment" data-item-id="{{id}}">Edit</button>{{/unless}}<button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button></div>{{/if}}</div>
+</div>
+{{#if expanded}}
+{{#if editing}}<label class="hud-equipment-name">Item Name<input data-item-name type="text" value="{{name}}" placeholder="Name this item"/></label>{{/if}}
+<fieldset class="hud-equipment-fields" {{#unless editing}}disabled{{/unless}}>
+
+<label>Weight (lb.)<input data-item-field="weight" type="number" min="0" step="any" value="{{weight}}"/></label>
+<label>Cost (credits)<input data-item-field="cost" type="number" min="0" value="{{cost}}"/></label>
+<label>Tier<input data-item-field="tier" type="number" min="1" value="{{tier}}"/></label>
+{{#if (eq type "weapon")}}
+<label>Weapon Class<select data-item-field="weaponClass"><option value="{{weaponClass}}">{{weaponClass}}</option><option value="Pistol">Pistol</option><option value="Rifle">Rifle</option><option value="Heavy Weapon">Heavy Weapon</option><option value="Explosive">Explosive</option><option value="Melee">Melee</option></select></label>
+<label>Hands<input data-item-field="hands" type="number" min="1" value="{{hands}}"/></label>
+<label>Base Damage<input data-item-field="damage" type="number" value="{{damage}}"/></label>
+<label>Accuracy Mod.<input data-item-field="accuracy" type="number" value="{{accuracy}}"/></label>
+<label>Rate of Fire<select data-item-field="rateOfFire"><option value="{{rateOfFire}}">{{rateOfFire}}</option><option value="Slow">Slow</option><option value="Average">Average</option><option value="Fast">Fast</option><option value="Automatic">Automatic</option><option value="Full Automatic">Full Automatic</option><option value="Thrown">Thrown</option><option value="Planted">Planted</option></select></label>
+<label>Range<select data-item-field="range"><option value="{{range}}">{{range}}</option><option value="Melee">Melee Reach</option><option value="Short">Short — 6 squares</option><option value="Medium">Medium — 30 squares</option><option value="Long">Long — 60 squares</option><option value="Distant">Distant — 120 squares</option><option value="Remote">Remote — 300 squares</option></select></label>
+<label>Magazine Capacity<input data-item-field="shots" type="number" min="0" value="{{shots}}"/></label>
+<label>Ammo Remaining<input data-item-field="currentShots" type="number" min="0" value="{{currentShots}}"/></label>
+<label>Ammunition Type<input data-item-field="ammunition" value="{{ammunition}}"/></label>
+<label>Power Rating<input data-item-field="powerRating" type="number" value="{{powerRating}}"/></label>
+{{else if (eq type "armor")}}
+<label>Armor Type<input data-item-field="armorType" value="{{armorType}}" placeholder="Light, Heavy, Powered..."/></label>
+<label>Damage Resistance<input data-item-field="armorResistance" type="number" value="{{armorResistance}}"/></label>
+<label>Defense Penalty<input data-item-field="armorDefensePenalty" type="number" value="{{armorDefensePenalty}}"/></label>
+<label>Armor Rating<input data-item-field="armorRating" type="number" value="{{armorRating}}"/></label>
+{{/if}}
+<label class="hud-wide">Special Traits<input data-item-field="specialTraits" value="{{specialTraits}}" placeholder="Comma-separated traits"/></label>
+<label class="hud-wide">Notes<input data-item-field="notes" value="{{notes}}"/></label>
+</fieldset>{{/if}}</div>
+{{else}}<p class="hud-help">No gear yet.</p>{{/each}}</section></section>
 {{else if (eq tab "talents")}}
 <section class="hud-panel"><h3>TALENTS & SPECIALIZATIONS</h3><p class="hud-help">Talent and specialization management is planned for a later milestone.</p></section>
 {{else if (eq tab "progression")}}
