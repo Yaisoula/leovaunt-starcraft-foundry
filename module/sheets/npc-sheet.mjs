@@ -16,11 +16,12 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
   if(!a.supported||!a.canFire){ui.notifications.warn("Unsupported firing mode or insufficient ammunition.");return;}
   const selected=Array.from(game.user.targets),profile=selected.length===1?targetProfile(selected[0]?.actor):null;
   if(selected.length===1&&!profile){ui.notifications.warn("Only Terran and NPC token targets have automated Defense.");return;}
-  const roll=await new Roll("1d20 + @bonus",{bonus:a.accuracy}).evaluate();
+  const actionMove=this.element.querySelector("[data-npc-action-move]")?.checked===true;
+  const roll=await new Roll("1d20 + @bonus",{bonus:a.accuracy-(actionMove?2:0)}).evaluate();
   if(a.requiresAmmo)await item.update({"system.currentShots":a.ammo-a.ammoNeeded});
   const outcome=profile?resolveWeaponDamage(a,roll.total,profile.defense):null,traits=traitsForWeapon(item);
   const preview=outcome?.hit?previewPhysicalDamage(profile,outcome.damage,traits):null;
-  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:foundry.utils.escapeHTML(item.name)+" — NPC Attack",content:attackDetailHtml({name:item.name,attack:a,outcome,target:profile,traits,preview})});
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:foundry.utils.escapeHTML(item.name)+(actionMove?" — Action Move (−2 accuracy)":" — NPC Attack"),content:attackDetailHtml({name:item.name,attack:a,outcome,target:profile,traits,preview})});
   if(traits.hasUnsupportedEffects)ui.notifications.warn("Special weapon traits require GM review.");
   await this.render();
  }
