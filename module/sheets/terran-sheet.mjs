@@ -87,12 +87,12 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
  async render(options={}){
   // Keep the reader's scroll position during Foundry's automatic form and actor updates.
   const root=this.element;
-  const tracked=root?[root,...root.querySelectorAll(".window-content,.hud-shell,.hud-body,.hud-content,.tab-content")]:[];
+  const tracked=root?[root.closest(".window-content"),root,...root.querySelectorAll(".window-content,.hud-shell,.hud-body,.hud-content,.tab-content")].filter(Boolean):[];
   const positions=tracked.map((node,index)=>({index,top:node.scrollTop,left:node.scrollLeft}));
   const result=await super.render(options);
   const next=this.element;
   if(next&&positions.length){
-   const targets=[next,...next.querySelectorAll(".window-content,.hud-shell,.hud-body,.hud-content,.tab-content")];
+   const targets=[next.closest(".window-content"),next,...next.querySelectorAll(".window-content,.hud-shell,.hud-body,.hud-content,.tab-content")].filter(Boolean);
    for(const {index,top,left} of positions){const node=targets[index];if(node){node.scrollTop=top;node.scrollLeft=left;}}
   }
   return result;
