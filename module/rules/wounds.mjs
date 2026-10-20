@@ -45,3 +45,40 @@ export function actorWoundPenalties(actor){return woundPenalties(woundState(acto
 export function skillWoundPenalty(penalties,skill){
  return penalties.allSkills+(penalties.skills[skill]||0)+(penalties.physicalSkills.includes(skill)?penalties.action:0);
 }
+
+/** Immediate wound results are applied once on resolution, never during derived-stat calculation.
+ * Extra damage bypasses a second wound roll; Bleed is tracked for start-of-turn GM application.
+ * Prone/drop are advisory until the GM chooses a token status or inventory item. */
+export function immediateWoundEffect(location,points=1){
+ const n=Math.max(0,Math.trunc(Number(points)||0));
+ return {bonusDamage:(location==="core"?5:location==="critical"?10:0)*n,
+  bleed:location==="vital"?2*n:0,
+  prone:location==="mobility",dropItem:location==="action"};
+}
+export function woundConditions(actor){return actor.getFlag("leovaunt-starcraft","woundConditions")??{bleed:0,prone:false};}
+export async function applyImmediateWoundEffect(actor,location,count,{applyDamage=true}={}){
+ if(!actor.canUserModify(game.user,"update"))throw Error("No permission to modify target");
+ const effect=immediateWoundEffect(location,count),old=woundConditions(actor);
+ const hp=Math.max(0,Number(actor.system.resources.hp.value)||0);
+ const hpLost=applyDamage?Math.min(hp,effect.bonusDamage):0;
+ const next={...old,bleed:Math.max(0,Number(old.bleed)||0)+effect.bleed,prone:old.prone||effect.prone};
+ // Do not feed bonus damage into resolvePhysicalDamage; that would double-count wounds.
+ if(hpLost)await actor.update({"system.resources.hp.value":hp-hpLost});
+ await actor.setFlag("leovaunt-starcraft","woundConditions",next);
+ return {...effect,hpLost,bleedTotal:next.bleed};
+}
+export async function gmSetWoundCondition(actor,key,value){
+ if(!game.user.isGM)throw Error("GM only");
+ if(!["bleed","prone"].includes(key))throw Error("Unsupported condition");
+ const current=woundConditions(actor),next={...current};
+ if(key==="bleed"){const n=Number(value);if(!Number.isSafeInteger(n)||n<0||n>1000)throw Error("Invalid Bleed value");next.bleed=n;}
+ else next.prone=Boolean(value);
+ await actor.setFlag("leovaunt-starcraft","woundConditions",next);
+}
+export async function applyBleedTick(actor){
+ if(!actor.canUserModify(game.user,"update"))throw Error("No permission to modify target");
+ const bleed=Math.max(0,Number(woundConditions(actor).bleed)||0),hp=Math.max(0,Number(actor.system.resources.hp.value)||0);
+ const lost=Math.min(hp,bleed);
+ if(lost)await actor.update({"system.resources.hp.value":hp-lost});
+ return {bleed,lost,remaining:hp-lost};
+}
