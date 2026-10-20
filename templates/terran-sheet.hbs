@@ -25,9 +25,10 @@
 {{#each inventory}}
 <div class="hud-equipment-card" data-equipment-id="{{id}}">
 <div class="hud-equipment-heading">
-<label class="hud-equip-toggle"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/><span>Equipped</span></label>
+<label class="hud-equip-toggle"><span class="hud-equip-checkbox"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></span><span>Equipped</span></label>
 <button type="button" class="hud-equipment-title" data-action="toggleEquipmentDetails" data-item-id="{{id}}" aria-expanded="{{expanded}}"><span class="hud-chevron">{{#if expanded}}▾{{else}}▸{{/if}}</span> {{name}}</button>
 <small>{{type}}</small>
+{{#if editing}}<button type="button" class="hud-equipment-primary-save" data-action="saveEquipment">Save</button>{{/if}}
 <button type="button" class="hud-equipment-more" data-action="toggleEquipmentMenu" data-item-id="{{id}}" aria-label="Item options">⋯</button>
 </div>
 {{#if menuOpen}}<div class="hud-equipment-menu"><button type="button" data-action="editEquipment" data-item-id="{{id}}">Edit</button><button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button></div>{{/if}}
@@ -57,12 +58,16 @@
 {{/if}}
 <label class="hud-wide">Special Traits<input data-item-field="specialTraits" value="{{specialTraits}}" placeholder="Comma-separated traits"/></label>
 <label class="hud-wide">Notes<input data-item-field="notes" value="{{notes}}"/></label>
-</fieldset>{{#if editing}}<div class="hud-equipment-save"><button type="button" data-action="saveEquipment">Save Item</button></div>{{/if}}{{/if}}</div>
+</fieldset>{{/if}}</div>
 {{else}}<p class="hud-help">No equipment yet. Create a weapon, armor, or gear item above.</p>{{/each}}</section>
 {{else if (eq tab "talents")}}
 <section class="hud-panel"><h3>TALENTS & SPECIALIZATIONS</h3><p class="hud-help">Talent and specialization management is planned for a later milestone.</p></section>
 {{else if (eq tab "progression")}}
-<section class="hud-panel"><h3>CHARACTER PROGRESSION</h3><div class="hud-mods"><label>Level <input type="number" name="system.level" value="{{s.level}}" min="1"/></label><label>Experience <input type="number" name="system.experience" value="{{s.experience}}"/></label><label>Characteristic Points <input type="number" name="system.resources.characteristicPoints" value="{{s.resources.characteristicPoints}}"/></label><label>Banked Points <input type="number" name="system.resources.bankedPoints" value="{{s.resources.bankedPoints}}"/></label></div><p class="hud-help">Next level XP milestone (cumulative): {{derived.nextLevelXP}} • Skill points per Terran skill purchase: {{derived.skillPointsPerPurchase}} • Attribute cap: {{derived.attributeMax}} • Skill rank cap: {{derived.skillBaseMax}}</p><p class="hud-help">Automatic spending, purchases and specialization progression are not yet enabled.</p></section>
+<section class="hud-panel"><h3>CHARACTER PROGRESSION</h3><div class="hud-mods"><label>Level <input type="number" name="system.level" value="{{s.level}}" min="1"/></label><label>Experience <span class="hud-xp-line"><input type="number" name="system.experience" value="{{s.experience}}" min="0"/> <strong>/ {{derived.xpPerLevel}}</strong></span></label><label>Characteristic Points <input type="number" name="system.resources.characteristicPoints" value="{{s.resources.characteristicPoints}}"/></label><label>Banked Points <input type="number" name="system.resources.bankedPoints" value="{{s.resources.bankedPoints}}"/></label></div><p class="hud-help">Experience required per level: {{derived.xpPerLevel}}. This field tracks XP earned toward the next level; level advancement remains manual. Skill points per Terran skill purchase: {{derived.skillPointsPerPurchase}} • Attribute cap: {{derived.attributeMax}} • Skill rank cap: {{derived.skillBaseMax}}</p>
+<h3>CHARACTER POWER LEVEL</h3>
+<label class="hud-power-select">Power Level <select name="system.powerLevel">{{#each powerLevels}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}</select></label>
+<div class="hud-power-stats"><div>Starting Characteristic Points <b>{{selectedPower.starting}}</b></div><div>Characteristic Points / Level <b>{{selectedPower.perLevel}}</b></div><div>Base Hit Points <b>{{selectedPower.hp}}</b></div></div>
+<p class="hud-help">Choose your campaign's power level at character creation. These values are reference statistics; changing power level does not automatically spend or award characteristic points.</p><p class="hud-help">Automatic spending, purchases and specialization progression are not yet enabled.</p></section>
 {{else if (eq tab "psionics")}}
 <section class="hud-panel"><h3>PSIONIC RECORDS</h3><div class="hud-mods"><label>Psi Level <input type="number" name="system.combat.psiLevel" value="{{s.combat.psiLevel}}"/></label></div><p class="hud-help">Psionic powers and disciplines are planned for a later milestone.</p></section>
 {{/if}}
