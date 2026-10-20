@@ -49,3 +49,16 @@
 .terran-hud .hud-xp-line{display:flex;align-items:center;gap:8px}.terran-hud .hud-xp-line input{min-width:0;flex:1}.terran-hud .hud-xp-line strong{white-space:nowrap;font-size:12px;color:#8dd7f1}
 .terran-hud .hud-power-select select{display:block;width:100%;height:28px;background:#081218;color:#f2f6f7;border:1px solid #4b6570}
 .terran-hud .hud-power-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.terran-hud .hud-power-stats>div{background:#15272f;padding:10px;font-size:12px}.terran-hud .hud-power-stats b{display:block;font-size:18px;color:#8dd7f1}
+
+/* Compact, precisely aligned equipment row controls. */
+.terran-hud .hud-equipment-heading{display:flex;align-items:center;gap:8px;position:relative}
+.terran-hud .hud-equipment-heading .hud-equip-toggle{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;height:28px!important;min-height:28px!important;line-height:28px!important;flex:0 0 102px;margin:0!important;padding:0!important;white-space:nowrap}
+.terran-hud .hud-equipment-heading .hud-equip-toggle>input[type="checkbox"]{appearance:checkbox!important;display:block!important;position:static!important;float:none!important;box-sizing:border-box!important;flex:0 0 16px!important;width:16px!important;min-width:16px!important;max-width:16px!important;height:16px!important;min-height:16px!important;max-height:16px!important;margin:0!important;padding:0!important;transform:none!important;vertical-align:middle!important}
+.terran-hud .hud-equipment-heading .hud-equip-toggle>span{display:block!important;line-height:28px!important;margin:0!important;padding:0!important}
+.terran-hud .hud-equipment-heading .hud-equipment-title{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:6px;flex:1 1 auto!important;text-align:left!important;margin:0!important;padding:4px 8px!important}
+.terran-hud .hud-equipment-heading .hud-equipment-title .hud-chevron{flex:0 0 auto}
+.terran-hud .hud-equipment-heading .hud-menu-anchor{position:relative;flex:0 0 auto;align-self:center}
+.terran-hud .hud-equipment-heading .hud-menu-anchor>.hud-equipment-more{min-width:29px;width:29px;height:27px}
+.terran-hud .hud-equipment-card{position:relative;overflow:visible}
+.terran-hud .hud-equipment-heading .hud-menu-anchor>.hud-equipment-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:50;display:flex;flex-direction:column;gap:4px;min-width:120px;padding:6px;margin:0;border:1px solid #7896a2;border-radius:3px;background:#0e222b;box-shadow:0 5px 17px #000b}
+.terran-hud .hud-equipment-heading .hud-menu-anchor>.hud-equipment-menu button{display:block;width:100%;text-align:left;padding:6px 12px;height:auto;min-height:29px;background:#1a3946;color:#d2eff8;border:1px solid #3c6475}
