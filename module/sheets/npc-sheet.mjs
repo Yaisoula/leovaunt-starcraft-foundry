@@ -210,7 +210,6 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
   const victim=selected[0]?.actor;
   if(!victim||!["terran","npc"].includes(victim.type)){ui.notifications.warn("Grab supports Terran and NPC targets.");return;}
   if(victim.id===this.document.id){ui.notifications.warn("You cannot grab yourself.");return;}
-  if(grabState(this.document)||grabState(victim)){ui.notifications.warn("One participant is already in a tracked Grab; multi-character Grabs require GM handling.");return;}
   const base=grabAthletics(this.document),tough=grabToughness(victim),esc=foundry.utils.escapeHTML;
   const chosen=await foundry.applications.api.DialogV2.prompt({
    window:{title:"Grab — "+victim.name},
@@ -226,9 +225,9 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
   const roll=await new Roll("1d20 + @bonus",{bonus}).evaluate();
   const success=roll.total>=dc;
   let note="";
-  if(success){try{await startGrab(this.document,victim);note="Grab tracked for both actors. Both are Immobilized and limited to standard actions until released.";}
-   catch(error){note="Grab succeeded, but state could not be tracked: "+error.message;ui.notifications.warn(note);}}
-  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:esc(this.document.name)+" — Grab",content:'<div class="sc-attack-details"><strong>'+(success?"SUCCESS":"FAILURE")+'</strong> — Grab vs '+esc(victim.name)+'<p>Athletics: '+roll.total+' vs Toughness '+dc+'</p><p>'+(success?esc(note):"Grab fails.")+'</p><small>Initiating Grab provokes an opportunity attack. Immobilized/action restrictions are reminders, not enforced automatically. Escape, slam, movement, and multi-character Grabs require GM adjudication.</small></div>'});
+  if(success){try{if(typeof victim.toggleStatusEffect!=="function")throw Error("Status effects are unavailable.");if(!victim.canUserModify(game.user,"update"))throw Error("No permission to change target conditions; ask the GM to apply Grappled.");if(!victim.statuses.has("grappled"))await victim.toggleStatusEffect("grappled",{active:true});note="Grappled condition applied to "+victim.name+". Remove it manually when the grab ends.";}
+   catch(error){note="Grab succeeded, but Grappled could not be applied: "+error.message;ui.notifications.warn(note);}}
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:esc(this.document.name)+" — Grab",content:'<div class="sc-attack-details"><strong>'+(success?"SUCCESS":"FAILURE")+'</strong> — Grab vs '+esc(victim.name)+'<p>Athletics: '+roll.total+' vs Toughness '+dc+'</p><p>'+(success?esc(note):"Grab fails.")+'</p><small>Initiating Grab provokes an opportunity attack. The Grappled condition is applied to the target on success. Escape, movement, and releasing the condition are GM/player-managed.</small></div>'});
   await this.render();
  }
  static async releaseGrab(){
