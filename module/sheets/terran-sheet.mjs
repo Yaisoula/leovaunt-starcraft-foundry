@@ -1,3 +1,4 @@
+import {disarmAttackBonus,disarmTargetToughness,disarmResult} from "../rules/disarm.mjs";
 import {chargeAttackModifiers,chargingState,setChargingDefense} from "../rules/charging.mjs";
 import {permanentWoundState,applyWoundThreshold,gmSetDeceased,gmUpdatePermanentInjury} from "../rules/wounds.mjs";
 import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints,woundConditions,applyImmediateWoundEffect,gmSetWoundCondition,applyBleedTick,droppableOneHandedItems,dropHeldItem} from "../rules/wounds.mjs";
@@ -6,7 +7,7 @@ import {resolvePhysicalDamage,parsePhysicalTraits} from "../rules/damage.mjs";
 import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {calculateTerran,ATTRIBUTE_LABELS,SKILL_ATTRIBUTES,PROWESS_LABELS,label} from "../rules/terran.mjs";
 export class TerranSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud"],position:{width:1000,height:760},window:{resizable:true,title:"Terran Personnel HUD"},form:{submitOnChange:true,closeOnSubmit:false,handler:TerranSheet.onFormSubmit},actions:{rollSkill:TerranSheet.rollSkill,rollAttribute:TerranSheet.rollAttribute,changeTab:TerranSheet.changeTab,toggleEquipped:TerranSheet.toggleEquipped,createEquipment:TerranSheet.createEquipment,saveEquipment:TerranSheet.saveEquipment,removeEquipment:TerranSheet.removeEquipment,toggleEquipmentDetails:TerranSheet.toggleEquipmentDetails,editEquipment:TerranSheet.editEquipment,toggleEquipmentMenu:TerranSheet.toggleEquipmentMenu,attackWeapon:TerranSheet.attackWeapon,toggleChargingDefense:TerranSheet.toggleChargingDefense,reloadWeapon:TerranSheet.reloadWeapon,chooseItemImage:TerranSheet.chooseItemImage,applyPhysicalDamage:TerranSheet.applyPhysicalDamage,resolveWounds:TerranSheet.resolveWounds,adjustWound:TerranSheet.adjustWound,applyBleedTick:TerranSheet.applyBleedTick,setWoundCondition:TerranSheet.setWoundCondition,setDeceased:TerranSheet.setDeceased,editPermanentInjury:TerranSheet.editPermanentInjury,removePermanentInjury:TerranSheet.removePermanentInjury}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud"],position:{width:1000,height:760},window:{resizable:true,title:"Terran Personnel HUD"},form:{submitOnChange:true,closeOnSubmit:false,handler:TerranSheet.onFormSubmit},actions:{rollSkill:TerranSheet.rollSkill,rollAttribute:TerranSheet.rollAttribute,changeTab:TerranSheet.changeTab,toggleEquipped:TerranSheet.toggleEquipped,createEquipment:TerranSheet.createEquipment,saveEquipment:TerranSheet.saveEquipment,removeEquipment:TerranSheet.removeEquipment,toggleEquipmentDetails:TerranSheet.toggleEquipmentDetails,editEquipment:TerranSheet.editEquipment,toggleEquipmentMenu:TerranSheet.toggleEquipmentMenu,attackWeapon:TerranSheet.attackWeapon,disarmWeapon:TerranSheet.disarmWeapon,toggleChargingDefense:TerranSheet.toggleChargingDefense,reloadWeapon:TerranSheet.reloadWeapon,chooseItemImage:TerranSheet.chooseItemImage,applyPhysicalDamage:TerranSheet.applyPhysicalDamage,resolveWounds:TerranSheet.resolveWounds,adjustWound:TerranSheet.adjustWound,applyBleedTick:TerranSheet.applyBleedTick,setWoundCondition:TerranSheet.setWoundCondition,setDeceased:TerranSheet.setDeceased,editPermanentInjury:TerranSheet.editPermanentInjury,removePermanentInjury:TerranSheet.removePermanentInjury}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/terran-sheet.hbs"}};
  _activeTab="overview";
  _damageDraft={damage:0,penetration:0,rending:0};
@@ -189,6 +190,35 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
  static async toggleChargingDefense(){
   if(!this.isEditable)return;
   try{await setChargingDefense(this.document,false);await this.render();}catch(err){ui.notifications.error(err.message);}
+ }
+
+ static async disarmWeapon(event,target){
+  if(!this.isEditable)return;
+  const item=this.document.items.get(target.dataset.itemId);
+  if(!item||item.type!=="weapon"||!item.system.equipped)return;
+  const selected=Array.from(game.user.targets);
+  if(selected.length>1){ui.notifications.warn("Target only one creature for Disarm.");return;}
+  const victim=selected[0]?.actor??null;
+  const toughness=disarmTargetToughness(victim);
+  const attack=disarmAttackBonus(this.document,item);
+  const esc=foundry.utils.escapeHTML;
+  const chosen=await foundry.applications.api.DialogV2.prompt({
+   window:{title:"Disarm — "+item.name},
+   content:'<p>Disarm is a standard action. Roll special attack against target Toughness plus the bonus for the item being held. No damage is dealt.</p>'+
+    '<label>Target Toughness <input type="number" name="toughness" min="0" step="1" value="'+(toughness??"")+'" required/></label>'+
+    '<label>Target item <select name="targetHands"><option value="1">One-handed (+2 Toughness)</option><option value="2">Two-handed (+5 Toughness)</option></select></label>'+
+    '<label>Additional attack modifier (size / situational) <input type="number" name="extra" step="1" value="0"/></label>'+
+    '<p>Your special attack bonus: '+attack.base+' + '+attack.handBonus+' (weapon) = '+attack.total+'. NPC size is not yet stored; add it above if needed.</p>',
+   ok:{label:"Roll Disarm",callback:(event,button)=>{const f=button.form;return {toughness:f.elements.toughness.value,targetHands:f.elements.targetHands.value,extra:f.elements.extra.value};}},
+   rejectClose:false
+  });
+  if(!chosen)return;
+  const tough=Number(chosen.toughness),extra=Number(chosen.extra);
+  if(chosen.toughness===""||!Number.isFinite(tough)||tough<0||!Number.isFinite(extra)){ui.notifications.warn("Enter valid Toughness and modifier values.");return;}
+  const roll=await new Roll("1d20 + @bonus",{bonus:attack.total+extra}).evaluate();
+  const result=disarmResult(roll.total,tough,chosen.targetHands);
+  const name=victim?.name??"Manual target";
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:esc(this.document.name)+" — Disarm ("+esc(item.name)+")",content:'<div class="sc-attack-details"><strong>'+(result.success?"SUCCESS":"FAILURE")+'</strong> — Disarm vs '+esc(name)+'<p>Special attack: '+roll.total+' vs Toughness '+result.dc+' (base '+tough+', held item +'+(Number(chosen.targetHands)===2?5:2)+')</p><p>'+(result.success?"No damage. The target drops the item at its feet. GM handles the item drop.":"Item remains held.")+'</p><small>Item selection, actual drop and unarmed grab-on-success-by-5 are not automated.</small></div>'});
  }
 
 }
