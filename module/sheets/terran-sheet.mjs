@@ -79,17 +79,20 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
  static async applyPhysicalDamage(event,target){
   if(!this.isEditable)return;
   const selected=Array.from(game.user.targets);
-  if(selected.length!==1){ui.notifications.warn("Target exactly one Terran token to apply damage.");return;}
+  if(selected.length!==1){ui.notifications.warn("Target exactly one Terran or NPC token to apply damage.");return;}
   const defender=selected[0]?.actor;
-  if(!defender||defender.type!=="terran"){ui.notifications.warn("This stage supports applying damage to Terran targets only.");return;}
+  if(!defender||!["terran","npc"].includes(defender.type)){ui.notifications.warn("Damage application currently supports Terran and NPC targets.");return;}
   if(!defender.canUserModify(game.user,"update")){ui.notifications.warn("You need permission to modify the targeted actor. Ask the GM to apply the damage.");return;}
   const section=target.closest(".hud-damage-application");
   const read=key=>Number(section?.querySelector('[data-damage-field="'+key+'"]')?.value);
   const damage=read("damage"),penetration=read("penetration"),rending=read("rending");
   if(![damage,penetration,rending].every(n=>Number.isSafeInteger(n)&&n>=0)){ui.notifications.warn("Enter nonnegative whole numbers for damage, penetration and rending.");return;}
-  const state=defender.system,derived=calculateTerran(state,defender.items);
-  const result=resolvePhysicalDamage({damage,penetration,rending,shield:state.resources.shields.value,shieldArmor:state.combat.shieldArmor,
-   resistance:derived.computed.damageResistance,protection:state.resources.protection,hp:state.resources.hp.value,threshold:derived.computed.damageThreshold});
+  const state=defender.system,derived=defender.type==="terran"?calculateTerran(state,defender.items):null;
+  const damageResistance=derived?derived.computed.damageResistance:state.defenses.damageResistance;
+  const shieldArmor=derived?state.combat.shieldArmor:state.defenses.shieldArmor;
+  const damageThreshold=derived?derived.computed.damageThreshold:state.defenses.damageThreshold;
+  const result=resolvePhysicalDamage({damage,penetration,rending,shield:state.resources.shields.value,shieldArmor,
+   resistance:damageResistance,protection:state.resources.protection,hp:state.resources.hp.value,threshold:damageThreshold});
   const confirm=await foundry.applications.api.DialogV2.confirm({window:{title:"Apply Physical Damage"},content:
    "<p><strong>"+foundry.utils.escapeHTML(defender.name)+"</strong>: "+damage+" physical damage.</p>"+
    "<p>Shields: -"+result.shieldAbsorbed+"; Protection: -"+result.protectionAbsorbed+"; HP: -"+result.hpLost+".</p>"+
