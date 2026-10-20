@@ -22,3 +22,5 @@
 .terran-hud .hud-tab-content::-webkit-scrollbar-thumb{background:#8cb3c3;border:2px solid #15232b;border-radius:6px}
 .terran-hud .hud-tab-content::-webkit-scrollbar-track{background:#15232b}
 .terran-hud .hud-tab-content:focus-visible{outline:1px solid #8cd4ea;outline-offset:-1px}
+
+.terran-hud .hud-combat-weapon{border:1px solid #566b78;background:#14252e;padding:11px;margin:10px 0}.terran-hud .hud-combat-weapon>span{display:block;color:#9ec0ce;font-size:11px;margin:5px 0}.terran-hud .hud-weapon-values{display:flex;flex-wrap:wrap;gap:12px;font-size:12px}.terran-hud .hud-weapon-values b{color:#88d2e9}.terran-hud .hud-weapon-actions{display:flex;gap:8px;margin-top:10px}.terran-hud .hud-weapon-actions button{width:auto;padding:5px 14px;background:#234453;color:#d0edf5;border:1px solid #7194a4}.terran-hud .hud-weapon-actions button:disabled{opacity:.45}
