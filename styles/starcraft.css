@@ -79,3 +79,5 @@
 .terran-hud .hud-bio-story textarea{display:block;width:100%;min-height:280px;padding:10px;resize:vertical;background:#081218;color:#f2f6f7;border:1px solid #4b6570;font:inherit;font-size:13px;line-height:1.5}
 
 .terran-hud .hud-combat-weapon .hud-target-defense{display:flex;align-items:center;gap:8px;margin:10px 0;color:#a8c9d8}.terran-hud .hud-combat-weapon .hud-target-defense input{width:104px;height:27px;text-align:center}
+
+.terran-hud .hud-damage-application{margin-top:10px}.terran-hud .hud-damage-fields{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.terran-hud .hud-damage-fields label{width:110px}.terran-hud .hud-damage-fields input{display:block;width:100%;height:26px}.terran-hud .hud-damage-fields button{width:auto;height:28px;min-width:115px;padding:3px 12px;border:1px solid #8cc4d3;background:#215061;color:#e5f7fc}
