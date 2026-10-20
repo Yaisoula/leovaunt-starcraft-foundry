@@ -19,10 +19,10 @@
 {{#unless attack.supported}}<p class="hud-overcap">Special firing mode: manual resolution required.</p>{{/unless}}
 </div>{{else}}<p class="hud-help">Equip a weapon in Inventory to use it here.</p>{{/each}}</section>
 <section class="hud-panel hud-damage-application"><h3>APPLY PHYSICAL DAMAGE</h3>
-<p class="hud-help">Target exactly one Terran token. Enter the damage after attack overages. Applies energy shields, shield armor, penetration, Damage Resistance and protection before subtracting HP. Special attack traits are not yet handled.</p>
-<div class="hud-damage-fields"><label>Damage<input type="number" min="0" step="1" data-damage-field="damage" value="0"/></label>
-<label>Penetration<input type="number" min="0" step="1" data-damage-field="penetration" value="0"/></label>
-<label>Rending<input type="number" min="0" step="1" data-damage-field="rending" value="0"/></label>
+<p class="hud-help">Target exactly one Terran token. A successful attack with a manually entered target Defense fills these fields automatically from its weapon damage and recognized Penetration/Rending traits. Review before applying. Applies energy shields, shield armor, penetration, Damage Resistance and protection before subtracting HP. Special attack traits are not yet handled.</p>
+<div class="hud-damage-fields"><label>Damage<input type="number" min="0" step="1" data-damage-field="damage" value="{{damageDraft.damage}}"/></label>
+<label>Penetration<input type="number" min="0" step="1" data-damage-field="penetration" value="{{damageDraft.penetration}}"/></label>
+<label>Rending<input type="number" min="0" step="1" data-damage-field="rending" value="{{damageDraft.rending}}"/></label>
 <button type="button" data-action="applyPhysicalDamage">Review &amp; Apply</button></div>
 <p class="hud-help">Crippling wound counts are recorded as pending; their locations, immediate effects and penalties require GM adjudication.</p>
 </section>
