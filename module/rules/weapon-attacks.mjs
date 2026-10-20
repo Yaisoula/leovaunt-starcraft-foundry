@@ -1,7 +1,9 @@
+import {woundPenalties} from "./wounds.mjs";
 // Standard attack preview, Leovaunt Core Rulebook pp. 55, 100, 156.
 // Full-auto modes and damage from attack averages intentionally deferred.
 const n=value=>Number(value)||0;
-export function weaponAttack(actorSystem,weapon){
+export function weaponAttack(actorSystem,weapon,woundPoints={}){
+ const wp=woundPenalties(woundPoints);
  const w=weapon.system,rate=String(w.rateOfFire||"Average").toLowerCase();
  const score=k=>{const v=actorSystem.attributes[k];return typeof v==="number"?n(v):n(v?.base)+n(v?.misc);};
  const agility=score("agility");
@@ -15,7 +17,7 @@ export function weaponAttack(actorSystem,weapon){
  const strength=score("strength");
  const instinct=score("instinct");
  const damage=n(w.damage)+Math.max(0,tier-1)*n(w.powerRating)+(melee?Math.floor(strength/2):0);
- const accuracy=n(actorSystem.prowess[skill]?.ranks??actorSystem.prowess[skill])+n(w.accuracy)+Math.max(0,tier-1)+Math.max(0,strikes-1)*4;
+ const accuracy=n(actorSystem.prowess[skill]?.ranks??actorSystem.prowess[skill])+n(w.accuracy)+Math.max(0,tier-1)+Math.max(0,strikes-1)*4-wp.attack;
  return {skill,melee,rate,supported,strikes,accuracy,damage,overageCap:Math.max(0,melee?strength:instinct),tier,requiresAmmo,ammo,capacity:shots,ammoNeeded:used,canFire:supported&&strikes>0&&(!requiresAmmo||ammo>=used)};
 }
 
