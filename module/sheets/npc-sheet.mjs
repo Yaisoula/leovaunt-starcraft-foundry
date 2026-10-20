@@ -1,3 +1,4 @@
+import {chargeAttackModifiers,chargingState,setChargingDefense} from "../rules/charging.mjs";
 import {permanentWoundState,applyWoundThreshold,gmSetDeceased,gmUpdatePermanentInjury} from "../rules/wounds.mjs";
 import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints,woundConditions,applyImmediateWoundEffect,gmSetWoundCondition,applyBleedTick,droppableOneHandedItems,dropHeldItem} from "../rules/wounds.mjs";
 import {actorWoundPenalties} from "../rules/wounds.mjs";
@@ -5,9 +6,9 @@ import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {targetProfile,previewPhysicalDamage,attackDetailHtml,traitsForWeapon} from "../rules/targeting.mjs";
 import {resolvePhysicalDamage} from "../rules/damage.mjs";
 export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,toggleChargingDefense:NpcSheet.toggleChargingDefense,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/npc-sheet.hbs"}};
- async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,effectiveDefenses:{defense:this.document.system.defenses.defense-actorWoundPenalties(this.document).defense,damageResistance:Math.max(0,this.document.system.defenses.damageResistance-actorWoundPenalties(this.document).damageResistance)},woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),permanentWounds:permanentWoundState(this.document),isGM:game.user.isGM,woundConditions:woundConditions(this.document),items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i,woundState(this.document).points),range:i.system.range,rate:i.system.rateOfFire}))};}
+ async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,effectiveDefenses:{defense:this.document.system.defenses.defense-actorWoundPenalties(this.document).defense,damageResistance:Math.max(0,this.document.system.defenses.damageResistance-actorWoundPenalties(this.document).damageResistance)},woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),permanentWounds:permanentWoundState(this.document),chargingDefense:chargingState(this.document),isGM:game.user.isGM,woundConditions:woundConditions(this.document),items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i,woundState(this.document).points),range:i.system.range,rate:i.system.rateOfFire}))};}
  static async save(event,form,formData){await this.document.update(formData.object);}
  static async rollNpcAttack(event,target){
   if(!this.isEditable)return;
@@ -16,12 +17,15 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
   if(!a.supported||!a.canFire){ui.notifications.warn("Unsupported firing mode or insufficient ammunition.");return;}
   const selected=Array.from(game.user.targets),profile=selected.length===1?targetProfile(selected[0]?.actor):null;
   if(selected.length===1&&!profile){ui.notifications.warn("Only Terran and NPC token targets have automated Defense.");return;}
-  const actionMove=this.element.querySelector("[data-npc-action-move]")?.checked===true;
-  const roll=await new Roll("1d20 + @bonus",{bonus:a.accuracy-(actionMove?2:0)}).evaluate();
+  const charge=this.element.querySelector("[data-npc-charge]")?.checked===true;
+  const actionMove=!charge&&this.element.querySelector("[data-npc-action-move]")?.checked===true;
+  const chargeMods=charge?chargeAttackModifiers(a):null;
+  if(charge)await setChargingDefense(this.document,true);
+  const roll=await new Roll("1d20 + @bonus",{bonus:(chargeMods?.accuracy??a.accuracy)-(actionMove?2:0)}).evaluate();
   if(a.requiresAmmo)await item.update({"system.currentShots":a.ammo-a.ammoNeeded});
-  const outcome=profile?resolveWeaponDamage(a,roll.total,profile.defense):null,traits=traitsForWeapon(item);
+  const outcome=profile?resolveWeaponDamage(chargeMods?{...a,damage:chargeMods.damage}:a,roll.total,profile.defense):null,traits=traitsForWeapon(item);
   const preview=outcome?.hit?previewPhysicalDamage(profile,outcome.damage,traits):null;
-  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:foundry.utils.escapeHTML(item.name)+(actionMove?" — Action Move (−2 accuracy)":" — NPC Attack"),content:attackDetailHtml({name:item.name,attack:a,outcome,target:profile,traits,preview})});
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:foundry.utils.escapeHTML(item.name)+(charge?" — Charge (+5 accuracy, melee +10 damage) — defense −2 until next turn":actionMove?" — Action Move (−2 accuracy)":" — NPC Attack"),content:attackDetailHtml({name:item.name,attack:chargeMods?{...a,damage:chargeMods.damage}:a,outcome,target:profile,traits,preview})});
   if(traits.hasUnsupportedEffects)ui.notifications.warn("Special weapon traits require GM review.");
   await this.render();
  }
@@ -102,6 +106,11 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
   const yes=await foundry.applications.api.DialogV2.confirm({window:{title:"Remove Permanent Injury"},content:"Remove this permanent injury record? This will not change wound points."});
   if(!yes)return;
   try{await gmUpdatePermanentInjury(this.document,id,{remove:true});await this.render();}catch(err){ui.notifications.error(err.message);}
+ }
+
+ static async toggleChargingDefense(){
+  if(!this.isEditable)return;
+  try{await setChargingDefense(this.document,false);await this.render();}catch(err){ui.notifications.error(err.message);}
  }
 
 }
