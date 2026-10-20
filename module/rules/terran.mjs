@@ -32,7 +32,7 @@ export function calculateTerran(s,items=[]){
  const limits=Object.fromEntries(Object.entries(s.skills).map(([key,v])=>[key,rankLimits(s.level,v.focus).skill]));
  const prowessLimits=Object.fromEntries(Object.entries(s.prowess).map(([key,v])=>[key,rankLimits(s.level,v.focus).skill]));
  return {attributes:a,prowess:p,computed,skillTotals,limits,prowessLimits,equipment:{armorResistance,armorDefensePenalty,equippedArmor:equippedArmor.length},attributeMax:rankLimits(s.level).attribute,skillBaseMax:rankLimits(s.level).skill,
- skillPointsPerPurchase:3+h(a.intelligence),nextLevelXP:Math.min(30,Math.max(1,Number(s.level))) * 500,
+ xpPerLevel:500,skillPointsPerPurchase:3+h(a.intelligence),nextLevelXP:Math.min(30,Math.max(1,Number(s.level))) * 500,
  warnings:[
  ...Object.entries(a).filter(([key,value])=>value>rankLimits(s.level).attribute).map(([key])=>label(key)+" exceeds the normal attribute cap"),
  ...Object.entries(s.skills).filter(([key,v])=>Number(v.ranks)>limits[key]).map(([key])=>label(key)+" exceeds maximum skill ranks"),
