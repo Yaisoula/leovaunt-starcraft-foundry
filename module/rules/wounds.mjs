@@ -65,6 +65,7 @@ export async function applyImmediateWoundEffect(actor,location,count,{applyDamag
  // Do not feed bonus damage into resolvePhysicalDamage; that would double-count wounds.
  if(hpLost)await actor.update({"system.resources.hp.value":hp-hpLost});
  await actor.setFlag("leovaunt-starcraft","woundConditions",next);
+ if(effect.prone)await setProneStatus(actor,true);
  return {...effect,hpLost,bleedTotal:next.bleed};
 }
 export async function gmSetWoundCondition(actor,key,value){
@@ -74,6 +75,7 @@ export async function gmSetWoundCondition(actor,key,value){
  if(key==="bleed"){const n=Number(value);if(!Number.isSafeInteger(n)||n<0||n>1000)throw Error("Invalid Bleed value");next.bleed=n;}
  else next.prone=Boolean(value);
  await actor.setFlag("leovaunt-starcraft","woundConditions",next);
+ if(key==="prone")await setProneStatus(actor,next.prone);
 }
 export async function applyBleedTick(actor){
  if(!actor.canUserModify(game.user,"update"))throw Error("No permission to modify target");
@@ -81,4 +83,25 @@ export async function applyBleedTick(actor){
  const lost=Math.min(hp,bleed);
  if(lost)await actor.update({"system.resources.hp.value":hp-lost});
  return {bleed,lost,remaining:hp-lost};
+}
+
+/** Eligible held weapons and gear. Armor and two-handed weapons cannot be dropped by this effect. */
+export function droppableOneHandedItems(actor){
+ return actor.items.filter(item=>["weapon","gear"].includes(item.type)&&item.system?.equipped&&Number(item.system?.hands??2)===1);
+}
+/** An unequip preserves the embedded item and its ammunition, quantity and other fields. */
+export async function dropHeldItem(actor,itemId){
+ if(!actor.canUserModify(game.user,"update"))throw Error("No permission to change inventory.");
+ const item=droppableOneHandedItems(actor).find(i=>i.id===itemId);
+ if(!item)throw Error("Select an equipped one-handed item.");
+ await item.update({"system.equipped":false});
+ return item.name;
+}
+/** Sync a tracked prone flag with Foundry's core prone condition on the actor. */
+export async function setProneStatus(actor,active){
+ if(!actor.canUserModify(game.user,"update"))throw Error("No permission to update conditions.");
+ if(typeof actor.toggleStatusEffect!=="function")throw Error("Foundry actor status effects are unavailable.");
+ if(actor.statuses.has("prone")!==Boolean(active))await actor.toggleStatusEffect("prone",{active:Boolean(active)});
+ const previous=woundConditions(actor);
+ if(previous.prone!==Boolean(active))await actor.setFlag("leovaunt-starcraft","woundConditions",{...previous,prone:Boolean(active)});
 }

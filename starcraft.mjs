@@ -1,3 +1,4 @@
+import {woundConditions} from "./module/rules/wounds.mjs";
 import {TerranDataModel,DeferredDataModel,NpcDataModel} from "./module/data/actor-models.mjs";
 import {StarcraftItemDataModel} from "./module/data/item-models.mjs";
 import {StarcraftItemSheet} from "./module/sheets/item-sheet.mjs";
@@ -10,3 +11,16 @@ Hooks.once("init",()=>{
  foundry.documents.collections.Items.registerSheet("leovaunt-starcraft",StarcraftItemSheet,{types:["weapon","armor","gear","talent","ability"],makeDefault:true,label:"StarCraft Item Editor"});
  foundry.documents.collections.Actors.registerSheet("leovaunt-starcraft",NpcSheet,{types:["npc"],makeDefault:true,label:"Unified NPC Sheet"});
 });
+
+/** Keep the wound tracker in sync if a GM toggles Prone from the token HUD. */
+function syncProneFromEffect(effect){
+ const actor=effect?.parent;
+ if(!game.user.isGM||!actor||!["terran","npc"].includes(actor.type))return;
+ if(!effect.statuses?.has("prone"))return;
+ const active=actor.statuses.has("prone");
+ if(woundConditions(actor).prone===active)return;
+ return actor.setFlag("leovaunt-starcraft","woundConditions",{...woundConditions(actor),prone:active});
+}
+Hooks.on("createActiveEffect",syncProneFromEffect);
+Hooks.on("deleteActiveEffect",syncProneFromEffect);
+Hooks.on("updateActiveEffect",syncProneFromEffect);
