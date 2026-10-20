@@ -1,6 +1,6 @@
 <section class="hud-shell">
 <header class="hud-header"><span>RAIDERS // PERSONNEL FILE</span><strong>TERRAN INTERFACE • ALPHA</strong></header>
-<div class="hud-identity"><img src="{{actor.img}}" alt="Portrait"/><div><label>Character Name <input name="name" value="{{actor.name}}" placeholder="Enter character name"/></label><label>Player <input name="system.player" value="{{s.player}}"/></label><label>Background <input name="system.background" value="{{s.background}}"/></label></div><div><label>Faction <input name="system.faction" value="{{s.faction}}"/></label><label>Quirk <input name="system.quirk" value="{{s.quirk}}"/></label></div></div>
+<div class="hud-identity hud-identity-simple"><img src="{{actor.img}}" alt="Portrait"/><div><label>Character Name <input name="name" value="{{actor.name}}" placeholder="Enter character name"/></label></div></div>
 <div class="hud-resources"><div>HP <input type="number" name="system.resources.hp.value" value="{{s.resources.hp.value}}"/> / {{derived.computed.hpMax}}</div><div>Shields <input type="number" name="system.resources.shields.value" value="{{s.resources.shields.value}}"/> / <input type="number" name="system.resources.shields.max" value="{{s.resources.shields.max}}"/></div><div>Fatigue <input type="number" name="system.resources.fatigue.value" value="{{s.resources.fatigue.value}}"/> / <input type="number" name="system.resources.fatigue.max" value="{{s.resources.fatigue.max}}"/></div></div>
 <nav class="hud-tabs" aria-label="Terran character sheet sections">{{#each tabs}}<button type="button" data-action="changeTab" data-tab="{{key}}" class="{{#if active}}active{{/if}}" aria-pressed="{{active}}">{{title}}</button>{{/each}}</nav>
 <div class="hud-tab-content" role="region" aria-label="Character tab contents" tabindex="0">
@@ -25,16 +25,17 @@
 {{#each inventory}}
 <div class="hud-equipment-card" data-equipment-id="{{id}}">
 <div class="hud-equipment-heading">
-<label class="hud-equip-toggle"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/><span>Equipped</span></label>
+<button type="button" class="hud-item-image" data-action="chooseItemImage" data-item-id="{{id}}" title="Choose item picture"><img src="{{img}}" alt="Image for {{name}}"/></button><label class="hud-equip-toggle" title="Equipped"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></label>
 <button type="button" class="hud-equipment-title" data-action="toggleEquipmentDetails" data-item-id="{{id}}" aria-expanded="{{expanded}}"><span class="hud-chevron">{{#if expanded}}▾{{else}}▸{{/if}}</span> {{name}}</button>
 <small>{{type}}</small>
+<label class="hud-item-quantity" title="Quantity"><span>Qty.</span><input type="number" min="0" step="1" value="{{quantity}}" data-item-id="{{id}}" data-action="saveQuantity"/></label>
 {{#if editing}}<button type="button" class="hud-equipment-primary-save" data-action="saveEquipment">Save</button><button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button>{{/if}}
 <div class="hud-menu-anchor"><button type="button" class="hud-equipment-more" data-action="toggleEquipmentMenu" data-item-id="{{id}}" aria-label="Item options" aria-expanded="{{menuOpen}}">⋯</button>{{#if menuOpen}}<div class="hud-equipment-menu" role="group" aria-label="Item actions">{{#unless editing}}<button type="button" data-action="editEquipment" data-item-id="{{id}}">Edit</button>{{/unless}}<button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button></div>{{/if}}</div>
 </div>
 {{#if expanded}}
 {{#if editing}}<label class="hud-equipment-name">Item Name<input data-item-name type="text" value="{{name}}" placeholder="Name this item"/></label>{{/if}}
 <fieldset class="hud-equipment-fields" {{#unless editing}}disabled{{/unless}}>
-<label>Quantity<input data-item-field="quantity" type="number" min="0" value="{{quantity}}"/></label>
+
 <label>Weight (lb.)<input data-item-field="weight" type="number" min="0" step="any" value="{{weight}}"/></label>
 <label>Cost (credits)<input data-item-field="cost" type="number" min="0" value="{{cost}}"/></label>
 <label>Tier<input data-item-field="tier" type="number" min="1" value="{{tier}}"/></label>
@@ -69,6 +70,11 @@
 <p class="hud-help">Choose your campaign's power level at character creation. These values are reference statistics; changing power level does not automatically spend or award characteristic points.</p><p class="hud-help">Automatic spending, purchases and specialization progression are not yet enabled.</p></section>
 {{else if (eq tab "psionics")}}
 <section class="hud-panel"><h3>PSIONIC RECORDS</h3><div class="hud-mods"><label>Psi Level <input type="number" name="system.combat.psiLevel" value="{{s.combat.psiLevel}}"/></label></div><p class="hud-help">Psionic powers and disciplines are planned for a later milestone.</p></section>
+{{else if (eq tab "bio")}}
+<section class="hud-panel"><h3>PERSONNEL BIOGRAPHY</h3>
+<div class="hud-bio-fields"><label>Faction<input name="system.faction" value="{{s.faction}}" placeholder="Faction affiliation"/></label><label>Background<input name="system.background" value="{{s.background}}" placeholder="Character background"/></label><label>Quirk<input name="system.quirk" value="{{s.quirk}}" placeholder="Character quirk"/></label></div>
+<label class="hud-bio-story">Backstory &amp; Additional Information<textarea name="system.notes" rows="14" placeholder="Write your character's history, personality, goals, and additional information here...">{{s.notes}}</textarea></label>
+</section>
 {{/if}}
 </div>
 <footer class="hud-footer">ALPHA 3 • Derived statistics, level limits and focuses are calculated. Warning-only caps; advanced automation in development.</footer>
