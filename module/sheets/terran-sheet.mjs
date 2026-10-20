@@ -1,3 +1,4 @@
+import {targetProfile,previewPhysicalDamage} from "../rules/targeting.mjs";
 import {resolvePhysicalDamage,parsePhysicalTraits} from "../rules/damage.mjs";
 import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {calculateTerran,ATTRIBUTE_LABELS,SKILL_ATTRIBUTES,PROWESS_LABELS,label} from "../rules/terran.mjs";
@@ -34,10 +35,11 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   if(!a.supported){ui.notifications.warn("This weapon firing mode is not yet automated.");return;}
   if(!a.canFire){ui.notifications.warn("Not enough ammunition for a standard attack. Reload or change weapons.");return;}
   const selected=Array.from(game.user.targets);
-  const npcTarget=selected.length===1 && selected[0]?.actor?.type==="npc" ? selected[0].actor : null;
+  const profile=selected.length===1?targetProfile(selected[0]?.actor):null;
+  if(selected.length===1&&!profile){ui.notifications.warn("Automated targeting supports Terran and NPC tokens.");return;}
   const input=target.closest(".hud-combat-weapon")?.querySelector("[data-target-defense]");
   const defenseText=input?.value?.trim()??"";
-  const defense=npcTarget?Number(npcTarget.system.defenses.defense):(defenseText===""?null:Number(defenseText));
+  const defense=profile?Number(profile.defense):(defenseText===""?null:Number(defenseText));
   if(defense!==null&&(!Number.isFinite(defense)||defense<0)){ui.notifications.warn("Target Defense must be a nonnegative number.");return;}
   const roll=await new Roll("1d20 + @bonus",{bonus:a.accuracy}).evaluate();
   if(a.requiresAmmo)await item.update({"system.currentShots":a.ammo-a.ammoNeeded});
@@ -45,14 +47,11 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+'</strong><p>Strikes: '+a.strikes+' · Ammunition used: '+a.ammoNeeded+'</p>';
   if(defense!==null){
     const outcome=resolveWeaponDamage(a,roll.total,defense);
-    breakdown+='<p><strong>'+(outcome.hit?'HIT':'MISS')+'</strong> vs Defense '+defense+(npcTarget?' ('+esc(npcTarget.name)+')':'')+'</p>';
+    breakdown+='<p><strong>'+(outcome.hit?'HIT':'MISS')+'</strong> vs Defense '+defense+(profile?' ('+esc(profile.actor.name)+')':'')+'</p>';
     if(outcome.hit){
       breakdown+='<p>Weapon and tier damage: '+a.damage+'<br>Attack overage: +'+outcome.overage+' (max '+a.overageCap+')<br><strong>Total physical damage before resistance: '+outcome.damage+'</strong><br>Penetration: '+traits.penetration+' · Rending: '+traits.rending+'</p>';
       this._damageDraft={damage:outcome.damage,penetration:traits.penetration,rending:traits.rending};
-      if(npcTarget){
-        const t=npcTarget.system,dr=resolvePhysicalDamage({damage:outcome.damage,penetration:traits.penetration,rending:traits.rending,shield:t.resources.shields.value,shieldArmor:t.defenses.shieldArmor,resistance:t.defenses.damageResistance,protection:t.resources.protection,hp:t.resources.hp.value,threshold:t.defenses.damageThreshold});
-        breakdown+='<p>NPC preview: Shields -'+dr.shieldAbsorbed+' · Protection -'+dr.protectionAbsorbed+' · HP -'+dr.hpLost+' · Pending wounds '+dr.wounds+'</p>';
-      }
+      if(profile){const dr=previewPhysicalDamage(profile,outcome.damage,traits);breakdown+='<p>Target preview: Shields -'+dr.shieldAbsorbed+' · Protection -'+dr.protectionAbsorbed+' · HP -'+dr.hpLost+' · Pending wounds +'+dr.wounds+'</p>';}
     }else breakdown+='<p>No damage.</p>';
   }else breakdown+='<p>Target Defense not provided; damage calculation pending.</p>';
   breakdown+='<small>Damage is not applied automatically. Confirm it in the physical damage section. Special traits and wound effects require GM review.</small></div>';
