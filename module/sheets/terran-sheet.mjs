@@ -7,7 +7,7 @@ import {permanentWoundState,applyWoundThreshold,gmSetDeceased,gmUpdatePermanentI
 import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints,woundConditions,applyImmediateWoundEffect,gmSetWoundCondition,applyBleedTick,droppableOneHandedItems,dropHeldItem} from "../rules/wounds.mjs";
 import {targetProfile,previewPhysicalDamage} from "../rules/targeting.mjs";
 import {resolvePhysicalDamage,parsePhysicalTraits} from "../rules/damage.mjs";
-import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
+import {weaponAttack,resolveWeaponDamage,firingModes,selectedFiringMode} from "../rules/weapon-attacks.mjs";
 import {calculateTerran,ATTRIBUTE_LABELS,SKILL_ATTRIBUTES,PROWESS_LABELS,label} from "../rules/terran.mjs";
 export class TerranSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
  static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud"],position:{width:1000,height:760},window:{resizable:true,title:"Terran Personnel HUD"},form:{submitOnChange:true,closeOnSubmit:false,handler:TerranSheet.onFormSubmit},actions:{rollSkill:TerranSheet.rollSkill,rollProwess:TerranSheet.rollProwess,rollAttribute:TerranSheet.rollAttribute,changeTab:TerranSheet.changeTab,toggleEquipped:TerranSheet.toggleEquipped,createEquipment:TerranSheet.createEquipment,saveEquipment:TerranSheet.saveEquipment,removeEquipment:TerranSheet.removeEquipment,toggleEquipmentDetails:TerranSheet.toggleEquipmentDetails,editEquipment:TerranSheet.editEquipment,toggleEquipmentMenu:TerranSheet.toggleEquipmentMenu,attackWeapon:TerranSheet.attackWeapon,disarmWeapon:TerranSheet.disarmWeapon,pushTarget:TerranSheet.pushTarget,knockDownTarget:TerranSheet.knockDownTarget,grabTarget:TerranSheet.grabTarget,releaseGrab:TerranSheet.releaseGrab,toggleChargingDefense:TerranSheet.toggleChargingDefense,reloadWeapon:TerranSheet.reloadWeapon,chooseItemImage:TerranSheet.chooseItemImage,applyPhysicalDamage:TerranSheet.applyPhysicalDamage,resolveWounds:TerranSheet.resolveWounds,describeWound:TerranSheet.describeWound,adjustWound:TerranSheet.adjustWound,saveBleed:TerranSheet.saveBleed,applyBleedTick:TerranSheet.applyBleedTick,setWoundCondition:TerranSheet.setWoundCondition,setDeceased:TerranSheet.setDeceased,editPermanentInjury:TerranSheet.editPermanentInjury,removePermanentInjury:TerranSheet.removePermanentInjury}};
@@ -21,7 +21,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
  _inventoryEntry(item){return {id:item.id,name:item.name,type:item.type,equipped:Boolean(item.system.equipped),quantity:item.system.quantity,weight:item.system.weight,cost:item.system.cost,tier:item.system.tier,weaponClass:item.system.weaponClass,hands:item.system.hands,damage:item.system.damage,accuracy:item.system.accuracy,rateOfFire:item.system.rateOfFire,range:item.system.range,shots:item.system.shots,currentShots:item.system.currentShots,ammunition:item.system.ammunition,powerRating:item.system.powerRating,specialTraits:item.system.specialTraits,armorResistance:item.system.armorResistance,armorDefensePenalty:item.system.armorDefensePenalty,armorType:item.system.armorType,armorRating:item.system.armorRating,notes:item.system.notes,img:item.img,expanded:this._expandedEquipment.has(item.id),editing:this._editingEquipment.has(item.id),menuOpen:this._menuEquipment===item.id};}
  async _prepareContext(options){const context=await super._prepareContext(options),actor=this.document,s=actor.system,d=calculateTerran(s,actor.items,woundState(actor).points);
  const powerLevels=[{key:"heroic",name:"Heroic",starting:25,perLevel:4,hp:40},{key:"advanced",name:"Advanced Heroic",starting:32,perLevel:5,hp:40},{key:"epic",name:"Epic Heroic",starting:40,perLevel:6,hp:40}];
- return {...context,actor,s,derived:d,grabInfo:grabState(actor),damageDraft:this._damageDraft,powerLevels:powerLevels.map(t=>({...t,selected:s.powerLevel===t.key})),selectedPower:powerLevels.find(t=>t.key===s.powerLevel)||powerLevels[0],woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),permanentWounds:permanentWoundState(this.document),permanentInjuryNotes:this.document.getFlag("leovaunt-starcraft","permanentInjuryNotes")??"",chargingDefense:chargingState(this.document),isGM:game.user.isGM,woundConditions:woundConditions(this.document),combatWeapons:actor.items.filter(item=>item.type==="weapon"&&item.system.equipped).map(item=>({id:item.id,name:item.name,range:item.system.range,rate:item.system.rateOfFire,attack:weaponAttack(s,item,woundState(actor).points)})),inventory:actor.items.filter(item=>["weapon","armor","gear"].includes(item.type)).map(item=>({id:item.id,name:item.name,type:item.type,equipped:Boolean(item.system.equipped),quantity:item.system.quantity,weight:item.system.weight,cost:item.system.cost,tier:item.system.tier,weaponClass:item.system.weaponClass,hands:item.system.hands,damage:item.system.damage,accuracy:item.system.accuracy,rateOfFire:item.system.rateOfFire,range:item.system.range,shots:item.system.shots,currentShots:item.system.currentShots,ammunition:item.system.ammunition,powerRating:item.system.powerRating,specialTraits:item.system.specialTraits,armorResistance:item.system.armorResistance,armorDefensePenalty:item.system.armorDefensePenalty,armorType:item.system.armorType,armorRating:item.system.armorRating,notes:item.system.notes,img:item.img,expanded:this._expandedEquipment.has(item.id),editing:this._editingEquipment.has(item.id),menuOpen:this._menuEquipment===item.id})),inventoryWeapons:actor.items.filter(item=>item.type==="weapon").map(item=>this._inventoryEntry(item)),inventoryArmor:actor.items.filter(item=>item.type==="armor").map(item=>this._inventoryEntry(item)),inventoryGear:actor.items.filter(item=>item.type==="gear").map(item=>this._inventoryEntry(item)),tab:this._activeTab,tabs:["overview","combat","inventory","talents","psionics","bio","progression"].map(key=>({key,title:key[0].toUpperCase()+key.slice(1),active:key===this._activeTab})),
+ return {...context,actor,s,derived:d,grabInfo:grabState(actor),damageDraft:this._damageDraft,powerLevels:powerLevels.map(t=>({...t,selected:s.powerLevel===t.key})),selectedPower:powerLevels.find(t=>t.key===s.powerLevel)||powerLevels[0],woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),permanentWounds:permanentWoundState(this.document),permanentInjuryNotes:this.document.getFlag("leovaunt-starcraft","permanentInjuryNotes")??"",chargingDefense:chargingState(this.document),isGM:game.user.isGM,woundConditions:woundConditions(this.document),combatWeapons:actor.items.filter(item=>item.type==="weapon"&&item.system.equipped).map(item=>({id:item.id,name:item.name,range:item.system.range,rate:item.system.rateOfFire,attack:weaponAttack(s,item,woundState(actor).points),modes:firingModes(weaponAttack(s,item,woundState(actor).points))})),inventory:actor.items.filter(item=>["weapon","armor","gear"].includes(item.type)).map(item=>({id:item.id,name:item.name,type:item.type,equipped:Boolean(item.system.equipped),quantity:item.system.quantity,weight:item.system.weight,cost:item.system.cost,tier:item.system.tier,weaponClass:item.system.weaponClass,hands:item.system.hands,damage:item.system.damage,accuracy:item.system.accuracy,rateOfFire:item.system.rateOfFire,range:item.system.range,shots:item.system.shots,currentShots:item.system.currentShots,ammunition:item.system.ammunition,powerRating:item.system.powerRating,specialTraits:item.system.specialTraits,armorResistance:item.system.armorResistance,armorDefensePenalty:item.system.armorDefensePenalty,armorType:item.system.armorType,armorRating:item.system.armorRating,notes:item.system.notes,img:item.img,expanded:this._expandedEquipment.has(item.id),editing:this._editingEquipment.has(item.id),menuOpen:this._menuEquipment===item.id})),inventoryWeapons:actor.items.filter(item=>item.type==="weapon").map(item=>this._inventoryEntry(item)),inventoryArmor:actor.items.filter(item=>item.type==="armor").map(item=>this._inventoryEntry(item)),inventoryGear:actor.items.filter(item=>item.type==="gear").map(item=>this._inventoryEntry(item)),tab:this._activeTab,tabs:["overview","combat","inventory","talents","psionics","bio","progression"].map(key=>({key,title:key[0].toUpperCase()+key.slice(1),active:key===this._activeTab})),
  attributes:Object.entries(ATTRIBUTE_LABELS).map(([key,name])=>({key,name,base:s.attributes[key].base,misc:s.attributes[key].misc,total:d.attributes[key],over:d.attributes[key]>d.attributeMax})),
  skills:Object.entries(SKILL_ATTRIBUTES).map(([key,attribute])=>({key,name:label(key),attribute:ATTRIBUTE_LABELS[attribute],ranks:s.skills[key].ranks,misc:s.skills[key].misc,total:d.skillTotals[key],focus:s.skills[key].focus,max:d.limits[key],over:Number(s.skills[key].ranks)>d.limits[key]})),
  skillColumns:[0,1].map(column=>Object.entries(SKILL_ATTRIBUTES).slice(column*8,(column+1)*8).map(([key,attribute])=>({key,name:label(key),attribute:ATTRIBUTE_LABELS[attribute],ranks:s.skills[key].ranks,misc:s.skills[key].misc,total:d.skillTotals[key],focus:s.skills[key].focus,max:d.limits[key],over:Number(s.skills[key].ranks)>d.limits[key]}))),
@@ -41,35 +41,48 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const item=this.document.items.get(target.dataset.itemId);
   if(!item||item.type!=="weapon"||!item.system.equipped)return;
   const a=weaponAttack(this.document.system,item,woundState(this.document).points);
-  if(!a.supported){ui.notifications.warn("This weapon firing mode is not yet automated.");return;}
-  if(!a.canFire){ui.notifications.warn("Not enough ammunition for a standard attack. Reload or change weapons.");return;}
+  const container=target.closest(".hud-combat-weapon");
+  let mode;
+  try{mode=selectedFiringMode(a,container?.querySelector("[data-firing-mode]")?.value||"normal");}
+  catch(error){ui.notifications.warn(error.message);return;}
+  if(!mode.canFire){ui.notifications.warn("Not enough ammunition for "+mode.label+" ("+mode.ammo+" rounds required).");return;}
   const selected=Array.from(game.user.targets);
-  const profile=selected.length===1?targetProfile(selected[0]?.actor):null;
-  if(selected.length===1&&!profile){ui.notifications.warn("Automated targeting supports Terran and NPC tokens.");return;}
-  const input=target.closest(".hud-combat-weapon")?.querySelector("[data-target-defense]");
-  const defenseText=input?.value?.trim()??"";
-  const defense=profile?Number(profile.defense):(defenseText===""?null:Number(defenseText));
-  if(defense!==null&&(!Number.isFinite(defense)||defense<0)){ui.notifications.warn("Target Defense must be a nonnegative number.");return;}
-  const charge=target.closest(".hud-combat-weapon")?.querySelector("[data-charge]")?.checked===true;
-  const actionMove=!charge&&target.closest(".hud-combat-weapon")?.querySelector("[data-action-move]")?.checked===true;
+  const profiles=selected.map(token=>targetProfile(token.actor)).filter(Boolean);
+  if(selected.length!==profiles.length){ui.notifications.warn("Some targets cannot be resolved automatically.");return;}
+  if(!mode.burst&&!mode.cone&&selected.length>1){ui.notifications.warn("This firing mode targets one creature. Select one target.");return;}
+  const defenseText=container?.querySelector("[data-target-defense]")?.value?.trim()??"";
+  const manualDefense=defenseText===""?null:Number(defenseText);
+  if(manualDefense!==null&&(!Number.isFinite(manualDefense)||manualDefense<0)){ui.notifications.warn("Target Defense must be nonnegative.");return;}
+  const charge=mode.id==="normal"&&container?.querySelector("[data-charge]")?.checked===true;
+  const actionMove=!charge&&container?.querySelector("[data-action-move]")?.checked===true;
   const chargeMods=charge?chargeAttackModifiers(a):null;
   if(charge)await setChargingDefense(this.document,true);
-  const roll=await new Roll("1d20 + @bonus",{bonus:(chargeMods?.accuracy??a.accuracy)-(actionMove?2:0)}).evaluate();
-  if(a.requiresAmmo)await item.update({"system.currentShots":a.ammo-a.ammoNeeded});
+  const accuracy=mode.accuracy+(chargeMods?chargeMods.accuracy-a.accuracy:0)-(actionMove?2:0);
+  const formula=mode.advantage?"2d20kh + @bonus":"1d20 + @bonus";
+  const roll=await new Roll(formula,{bonus:accuracy}).evaluate();
+  if(a.requiresAmmo)await item.update({"system.currentShots":a.ammo-mode.ammo});
   const esc=foundry.utils.escapeHTML,traits=parsePhysicalTraits(item.system.specialTraits);
-  let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+(charge?' — Charge (+5 accuracy, melee +10 damage; defense −2 until next turn)':actionMove?' — Action Move (−2 accuracy; movement GM-controlled)':'')+'</strong><p>Strikes: '+a.strikes+' · Ammunition used: '+a.ammoNeeded+'</p>';
-  if(defense!==null){
-    const outcome=resolveWeaponDamage(chargeMods?{...a,damage:chargeMods.damage}:a,roll.total,defense);
-    breakdown+='<p><strong>'+(outcome.hit?'HIT':'MISS')+'</strong> vs Defense '+defense+(profile?' ('+esc(profile.actor.name)+')':'')+'</p>';
-    if(outcome.hit){
-      breakdown+='<p>Weapon and tier damage: '+(chargeMods?.damage??a.damage)+'<br>Attack overage: +'+outcome.overage+' (max '+a.overageCap+')<br><strong>Total physical damage before resistance: '+outcome.damage+'</strong><br>Penetration: '+traits.penetration+' · Rending: '+traits.rending+'</p>';
-      this._damageDraft={damage:outcome.damage,penetration:traits.penetration,rending:traits.rending};
-      if(profile){const dr=previewPhysicalDamage(profile,outcome.damage,traits);breakdown+='<p>Target preview: Shields -'+dr.shieldAbsorbed+' · Protection -'+dr.protectionAbsorbed+' · HP -'+dr.hpLost+' · Pending wounds +'+dr.wounds+'</p>';}
-    }else breakdown+='<p>No damage.</p>';
-  }else breakdown+='<p>Target Defense not provided; damage calculation pending.</p>';
-  breakdown+='<small>Damage is not applied automatically. Confirm it in the physical damage section. Special traits and wound effects require GM review.</small></div>';
-  if(traits.hasUnsupportedEffects)ui.notifications.warn("Some weapon traits require manual damage resolution.");
-  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],content:breakdown,flavor:esc(item.name)+" — Attack"});
+  const targets=profiles.length?profiles.map(p=>({name:p.actor.name,defense:Number(p.defense),profile:p})):(manualDefense!==null?[{name:"Manual target",defense:manualDefense,profile:null}]:[]);
+  let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong><p>Accuracy: '+accuracy+' · Strikes: '+mode.strikes+' · Ammunition used: '+mode.ammo+'</p>';
+  if(mode.burst)breakdown+='<p>Burst ('+mode.burst+') area · Hailfire ('+mode.hailfire+'). GM confirms creatures in area; area attacks have no attack overage and deal half base damage on a miss.</p>';
+  else if(mode.hailfire)breakdown+='<p>Hailfire ('+mode.hailfire+'): multiply post-resistance damage ×'+(mode.hailfire+1)+'.</p>';
+  if(mode.suppress)breakdown+='<p><strong>Suppressing Fire:</strong> Cone ('+mode.cone+'), full-round action; no damage on misses. A target taking HP or Protection damage is Slowed for 1 round and loses 1 Morale (shields alone do not trigger this). Area persists until the start of the attacker’s next turn; entering costs 1 Morale unless Jaded or exempt. Ending a turn inside and in line of sight triggers two single-strike attacks, with no extra ammunition. GM tracks area, movement, conditions, and follow-up attacks.</p>';
+  if(mode.cone&&!mode.suppress)breakdown+='<p>Cone ('+mode.cone+')</p>';
+  if(!targets.length)breakdown+='<p>No target Defense provided; GM resolves hits and damage.</p>';
+  for(const t of targets){
+    const outcome=resolveWeaponDamage(a,roll.total,t.defense);
+    const hit=outcome.hit;
+    const damage=hit?(mode.burst?a.damage:outcome.damage):((mode.burst&&!mode.suppress)?Math.floor(a.damage/2):0);
+    breakdown+='<p><strong>'+esc(t.name)+': '+(hit?'HIT':'MISS')+'</strong> vs Defense '+t.defense+' · Base pre-resistance damage '+damage+'</p>';
+    if(damage>0){
+      breakdown+='<p>Penetration: '+traits.penetration+' · Rending: '+traits.rending+(mode.hailfire?' · Hailfire ('+mode.hailfire+') applied AFTER resistance':'')+'</p>';
+      if(!mode.hailfire&&!mode.burst&&!mode.suppress)this._damageDraft={damage,penetration:traits.penetration,rending:traits.rending};
+      if(t.profile&&!mode.hailfire){const preview=previewPhysicalDamage(t.profile,damage,traits);breakdown+='<p>Preview: Shields -'+preview.shieldAbsorbed+' · Protection -'+preview.protectionAbsorbed+' · HP -'+preview.hpLost+' · Pending wounds +'+preview.wounds+'</p>';}
+    }
+  }
+  breakdown+='<small>Damage is not automatically applied. Hailfire, area effects, wound multipliers, and suppression effects require GM resolution after resistance. Select affected targets for area attacks.</small></div>';
+  if(traits.hasUnsupportedEffects)ui.notifications.warn("Some weapon traits require manual resolution.");
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],content:breakdown,flavor:esc(item.name)+" — "+esc(mode.label)});
   await this.render();
  }
  static async reloadWeapon(event,target){
