@@ -1,12 +1,12 @@
-import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints} from "../rules/wounds.mjs";
+import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints,woundConditions,applyImmediateWoundEffect,gmSetWoundCondition,applyBleedTick} from "../rules/wounds.mjs";
 import {actorWoundPenalties} from "../rules/wounds.mjs";
 import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {targetProfile,previewPhysicalDamage,attackDetailHtml,traitsForWeapon} from "../rules/targeting.mjs";
 import {resolvePhysicalDamage} from "../rules/damage.mjs";
 export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/npc-sheet.hbs"}};
- async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,effectiveDefenses:{defense:this.document.system.defenses.defense-actorWoundPenalties(this.document).defense,damageResistance:Math.max(0,this.document.system.defenses.damageResistance-actorWoundPenalties(this.document).damageResistance)},woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),isGM:game.user.isGM,items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i,woundState(this.document).points),range:i.system.range,rate:i.system.rateOfFire}))};}
+ async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,effectiveDefenses:{defense:this.document.system.defenses.defense-actorWoundPenalties(this.document).defense,damageResistance:Math.max(0,this.document.system.defenses.damageResistance-actorWoundPenalties(this.document).damageResistance)},woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),isGM:game.user.isGM,woundConditions:woundConditions(this.document),items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i,woundState(this.document).points),range:i.system.range,rate:i.system.rateOfFire}))};}
  static async save(event,form,formData){await this.document.update(formData.object);}
  static async rollNpcAttack(event,target){
   if(!this.isEditable)return;
@@ -37,11 +37,29 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
   if(!Number.isSafeInteger(count)||count<=0){ui.notifications.warn("No pending wounds.");return;}
   const result=await recordWounds(actor,{count,source:"Pending physical damage"});
   await actor.update({"system.resources.woundsPending":0});
+  const immediate=await applyImmediateWoundEffect(actor,result.location,count);
   const rule=WOUND_RULES[result.location];await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor}),content:"<strong>"+foundry.utils.escapeHTML(actor.name)+"</strong>: "+count+" wound point(s) to "+result.location+" ("+(result.rolls[0]?.total??"GM")+")<p>Immediate: "+rule.immediate+"</p><p>Ongoing: "+rule.ongoing+"</p>"+(result.dead?"<strong>Death/destruction threshold reached — GM review required.</strong>":result.maimed?"<strong>Maiming threshold reached — GM review required.</strong>":"")});
   await this.render();
  }
  static async adjustWound(event,target){
   if(!game.user.isGM)return;const loc=target.dataset.location,input=this.element.querySelector('[data-wound-points="'+loc+'"]');try{await gmSetWoundPoints(this.document,loc,input?.value);await this.render();}catch(err){ui.notifications.error(err.message);}
+ }
+
+ static async applyBleedTick(){
+  if(!this.isEditable)return;
+  const amount=woundConditions(this.document).bleed;
+  if(!amount){ui.notifications.info("No Bleed damage to apply.");return;}
+  const yes=await foundry.applications.api.DialogV2.confirm({window:{title:"Apply Bleed at Turn Start"},content:"Apply "+amount+" Bleed damage to "+foundry.utils.escapeHTML(this.document.name)+"? Bleed ignores Damage Resistance and does not create crippling wounds."});
+  if(!yes)return;
+  const result=await applyBleedTick(this.document);
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),content:foundry.utils.escapeHTML(this.document.name)+" takes "+result.lost+" Bleed damage (Bleed "+result.bleed+")."});
+  await this.render();
+ }
+ static async setWoundCondition(event,target){
+  if(!game.user.isGM)return;
+  const key=target.dataset.condition;
+  const field=this.element.querySelector('[data-wound-condition="'+key+'"]');
+  try{await gmSetWoundCondition(this.document,key,key==="prone"?field?.checked:field?.value);await this.render();}catch(err){ui.notifications.error(err.message);}
  }
 
 }
