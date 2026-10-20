@@ -1,10 +1,11 @@
+import {chargeDefensePenalty} from "./charging.mjs";
 import {actorWoundPenalties,woundState} from "./wounds.mjs";
 import {calculateTerran} from "./terran.mjs";
 import {resolvePhysicalDamage,parsePhysicalTraits} from "./damage.mjs";
 export function targetProfile(actor){
  if(!actor || !["terran","npc"].includes(actor.type))return null;
  const s=actor.system, npc=actor.type==="npc", wp=actorWoundPenalties(actor), stats=npc?{...s.defenses,defense:s.defenses.defense-wp.defense,damageResistance:Math.max(0,s.defenses.damageResistance-wp.damageResistance)}:calculateTerran(s,actor.items,woundState(actor).points).computed;
- return {actor,defense:stats.defense,damageResistance:npc?stats.damageResistance:stats.damageResistance,
+ return {actor,defense:stats.defense-chargeDefensePenalty(actor),damageResistance:npc?stats.damageResistance:stats.damageResistance,
  shieldArmor:npc?stats.shieldArmor:s.combat.shieldArmor,damageThreshold:stats.damageThreshold,
  shield:s.resources.shields.value,protection:s.resources.protection,hp:s.resources.hp.value};
 }
