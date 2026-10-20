@@ -27,3 +27,21 @@ export async function gmSetWoundPoints(actor,location,value){
  const state=woundState(actor),before=Number(state.points?.[location]||0);
  await actor.setFlag("leovaunt-starcraft","wounds",{points:{...state.points,[location]:n},history:[...(state.history??[]),{time:Date.now(),location,points:n-before,source:"GM adjustment",override:true,by:game.user.id}].slice(-100)});
 }
+
+/** Numeric wound penalties. Never mutate stored base statistics. */
+export function woundPenalties(points={}){
+ const p=k=>Math.max(0,Math.trunc(Number(points[k])||0));
+ const mobility=p("mobility"),action=p("action"),core=p("core"),vital=p("vital"),critical=p("critical");
+ return {mobility,action,core,vital,critical,
+  moveSpeed:mobility,healingThreshold:core,damageResistance:vital,
+  defense:critical,attack:action+critical,
+  allSkills:critical,
+  skills:{athletics:mobility,acrobatics:mobility,stealth:mobility,pilot:mobility},
+  // Action applies to physical interaction checks; this list is intentionally explicit.
+  physicalSkills:["athletics","acrobatics","stealth","pilot"],
+  regeneration:vital,vehicleSpeedPercent:mobility*10};
+}
+export function actorWoundPenalties(actor){return woundPenalties(woundState(actor).points);}
+export function skillWoundPenalty(penalties,skill){
+ return penalties.allSkills+(penalties.skills[skill]||0)+(penalties.physicalSkills.includes(skill)?penalties.action:0);
+}
