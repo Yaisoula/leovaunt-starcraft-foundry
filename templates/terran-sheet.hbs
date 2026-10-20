@@ -51,12 +51,12 @@
 <label>Cost (credits)<input data-item-field="cost" type="number" min="0" value="{{cost}}"/></label>
 <label>Tier<input data-item-field="tier" type="number" min="1" value="{{tier}}"/></label>
 {{#if (eq type "weapon")}}
-<label>Weapon Class<input data-item-field="weaponClass" value="{{weaponClass}}" placeholder="Rifle, Pistol, Melee..."/></label>
+<label>Weapon Class<select data-item-field="weaponClass"><option value="{{weaponClass}}">{{weaponClass}}</option><option value="Pistol">Pistol</option><option value="Rifle">Rifle</option><option value="Heavy Weapon">Heavy Weapon</option><option value="Explosive">Explosive</option><option value="Melee">Melee</option></select></label>
 <label>Hands<input data-item-field="hands" type="number" min="1" value="{{hands}}"/></label>
 <label>Base Damage<input data-item-field="damage" type="number" value="{{damage}}"/></label>
 <label>Accuracy Mod.<input data-item-field="accuracy" type="number" value="{{accuracy}}"/></label>
 <label>Rate of Fire<select data-item-field="rateOfFire"><option value="{{rateOfFire}}">{{rateOfFire}}</option><option value="Slow">Slow</option><option value="Average">Average</option><option value="Fast">Fast</option><option value="Automatic">Automatic</option><option value="Full Automatic">Full Automatic</option><option value="Thrown">Thrown</option><option value="Planted">Planted</option></select></label>
-<label>Range<select data-item-field="range"><option value="{{range}}">{{range}}</option><option value="Melee">Melee</option><option value="Short">Short</option><option value="Medium">Medium</option><option value="Long">Long</option><option value="Distant">Distant</option><option value="Remote">Remote</option><option value="Thrown">Thrown</option></select></label>
+<label>Range<select data-item-field="range"><option value="{{range}}">{{range}}</option><option value="Melee">Melee Reach</option><option value="Short">Short — 6 squares</option><option value="Medium">Medium — 30 squares</option><option value="Long">Long — 60 squares</option><option value="Distant">Distant — 120 squares</option><option value="Remote">Remote — 300 squares</option></select></label>
 <label>Magazine Capacity<input data-item-field="shots" type="number" min="0" value="{{shots}}"/></label>
 <label>Ammo Remaining<input data-item-field="currentShots" type="number" min="0" value="{{currentShots}}"/></label>
 <label>Ammunition Type<input data-item-field="ammunition" value="{{ammunition}}"/></label>
