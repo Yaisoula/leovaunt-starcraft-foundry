@@ -25,13 +25,12 @@
 {{#each inventory}}
 <div class="hud-equipment-card" data-equipment-id="{{id}}">
 <div class="hud-equipment-heading">
-<label class="hud-equip-toggle"><span class="hud-equip-checkbox"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></span><span>Equipped</span></label>
+<label class="hud-equip-toggle"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/><span>Equipped</span></label>
 <button type="button" class="hud-equipment-title" data-action="toggleEquipmentDetails" data-item-id="{{id}}" aria-expanded="{{expanded}}"><span class="hud-chevron">{{#if expanded}}▾{{else}}▸{{/if}}</span> {{name}}</button>
 <small>{{type}}</small>
-{{#if editing}}<button type="button" class="hud-equipment-primary-save" data-action="saveEquipment">Save</button><button type="button" data-action="editEquipment" data-item-id="{{id}}">Edit</button><button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button>{{/if}}
-<button type="button" class="hud-equipment-more" data-action="toggleEquipmentMenu" data-item-id="{{id}}" aria-label="Item options">⋯</button>
+{{#if editing}}<button type="button" class="hud-equipment-primary-save" data-action="saveEquipment">Save</button><button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button>{{/if}}
+<div class="hud-menu-anchor"><button type="button" class="hud-equipment-more" data-action="toggleEquipmentMenu" data-item-id="{{id}}" aria-label="Item options" aria-expanded="{{menuOpen}}">⋯</button>{{#if menuOpen}}<div class="hud-equipment-menu" role="group" aria-label="Item actions">{{#unless editing}}<button type="button" data-action="editEquipment" data-item-id="{{id}}">Edit</button>{{/unless}}<button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button></div>{{/if}}</div>
 </div>
-{{#if menuOpen}}<div class="hud-equipment-menu"><button type="button" data-action="editEquipment" data-item-id="{{id}}">Edit</button><button type="button" data-action="removeEquipment" data-item-id="{{id}}">Delete</button></div>{{/if}}
 {{#if expanded}}
 {{#if editing}}<label class="hud-equipment-name">Item Name<input data-item-name type="text" value="{{name}}" placeholder="Name this item"/></label>{{/if}}
 <fieldset class="hud-equipment-fields" {{#unless editing}}disabled{{/unless}}>
