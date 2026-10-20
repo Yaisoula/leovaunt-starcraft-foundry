@@ -1,10 +1,11 @@
+import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints} from "../rules/wounds.mjs";
 import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {targetProfile,previewPhysicalDamage,attackDetailHtml,traitsForWeapon} from "../rules/targeting.mjs";
 import {resolvePhysicalDamage} from "../rules/damage.mjs";
 export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/npc-sheet.hbs"}};
- async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i),range:i.system.range,rate:i.system.rateOfFire}))};}
+ async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),isGM:game.user.isGM,items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i),range:i.system.range,rate:i.system.rateOfFire}))};}
  static async save(event,form,formData){await this.document.update(formData.object);}
  static async rollNpcAttack(event,target){
   if(!this.isEditable)return;
@@ -30,4 +31,16 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
   await this.render();
  }
  static async applyNpcDamage(event,target){if(!this.isEditable)return;const input=this.element.querySelector("[data-npc-damage]");const damage=Number(input?.value);if(!Number.isSafeInteger(damage)||damage<0){ui.notifications.warn("Enter a whole nonnegative damage value.");return;}const s=this.document.system;const result=resolvePhysicalDamage({damage,shield:s.resources.shields.value,shieldArmor:s.defenses.shieldArmor,resistance:s.defenses.damageResistance,protection:s.resources.protection,hp:s.resources.hp.value,threshold:s.defenses.damageThreshold});const approved=await foundry.applications.api.DialogV2.confirm({window:{title:"Apply NPC Damage"},content:"Apply "+damage+" damage to "+foundry.utils.escapeHTML(this.document.name)+"? Shields -"+result.shieldAbsorbed+", HP -"+result.hpLost+", pending wounds +"+result.wounds+"."});if(!approved)return;await this.document.update({"system.resources.shields.value":result.shieldRemaining,"system.resources.hp.value":result.hpRemaining,"system.resources.protection":result.protectionRemaining,"system.resources.woundsPending":Number(s.resources.woundsPending||0)+result.wounds});await this.render();}
+ static async resolveWounds(){
+  if(!this.isEditable)return;const actor=this.document,count=Number(actor.system.resources.woundsPending||0);
+  if(!Number.isSafeInteger(count)||count<=0){ui.notifications.warn("No pending wounds.");return;}
+  const result=await recordWounds(actor,{count,source:"Pending physical damage"});
+  await actor.update({"system.resources.woundsPending":0});
+  const rule=WOUND_RULES[result.location];await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor}),content:"<strong>"+foundry.utils.escapeHTML(actor.name)+"</strong>: "+count+" wound point(s) to "+result.location+" ("+(result.rolls[0]?.total??"GM")+")<p>Immediate: "+rule.immediate+"</p><p>Ongoing: "+rule.ongoing+"</p>"+(result.dead?"<strong>Death/destruction threshold reached — GM review required.</strong>":result.maimed?"<strong>Maiming threshold reached — GM review required.</strong>":"")});
+  await this.render();
+ }
+ static async adjustWound(event,target){
+  if(!game.user.isGM)return;const loc=target.dataset.location,input=this.element.querySelector('[data-wound-points="'+loc+'"]');try{await gmSetWoundPoints(this.document,loc,input?.value);await this.render();}catch(err){ui.notifications.error(err.message);}
+ }
+
 }
