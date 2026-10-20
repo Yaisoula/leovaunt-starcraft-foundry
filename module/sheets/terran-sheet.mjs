@@ -1,4 +1,4 @@
-import {disarmAttackBonus,disarmTargetToughness,disarmResult} from "../rules/disarm.mjs";
+import {disarmAttackBonus,disarmTargetToughness,disarmResult,pushResult} from "../rules/disarm.mjs";
 import {chargeAttackModifiers,chargingState,setChargingDefense} from "../rules/charging.mjs";
 import {permanentWoundState,applyWoundThreshold,gmSetDeceased,gmUpdatePermanentInjury} from "../rules/wounds.mjs";
 import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints,woundConditions,applyImmediateWoundEffect,gmSetWoundCondition,applyBleedTick,droppableOneHandedItems,dropHeldItem} from "../rules/wounds.mjs";
@@ -7,7 +7,7 @@ import {resolvePhysicalDamage,parsePhysicalTraits} from "../rules/damage.mjs";
 import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {calculateTerran,ATTRIBUTE_LABELS,SKILL_ATTRIBUTES,PROWESS_LABELS,label} from "../rules/terran.mjs";
 export class TerranSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud"],position:{width:1000,height:760},window:{resizable:true,title:"Terran Personnel HUD"},form:{submitOnChange:true,closeOnSubmit:false,handler:TerranSheet.onFormSubmit},actions:{rollSkill:TerranSheet.rollSkill,rollAttribute:TerranSheet.rollAttribute,changeTab:TerranSheet.changeTab,toggleEquipped:TerranSheet.toggleEquipped,createEquipment:TerranSheet.createEquipment,saveEquipment:TerranSheet.saveEquipment,removeEquipment:TerranSheet.removeEquipment,toggleEquipmentDetails:TerranSheet.toggleEquipmentDetails,editEquipment:TerranSheet.editEquipment,toggleEquipmentMenu:TerranSheet.toggleEquipmentMenu,attackWeapon:TerranSheet.attackWeapon,disarmWeapon:TerranSheet.disarmWeapon,toggleChargingDefense:TerranSheet.toggleChargingDefense,reloadWeapon:TerranSheet.reloadWeapon,chooseItemImage:TerranSheet.chooseItemImage,applyPhysicalDamage:TerranSheet.applyPhysicalDamage,resolveWounds:TerranSheet.resolveWounds,adjustWound:TerranSheet.adjustWound,applyBleedTick:TerranSheet.applyBleedTick,setWoundCondition:TerranSheet.setWoundCondition,setDeceased:TerranSheet.setDeceased,editPermanentInjury:TerranSheet.editPermanentInjury,removePermanentInjury:TerranSheet.removePermanentInjury}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud"],position:{width:1000,height:760},window:{resizable:true,title:"Terran Personnel HUD"},form:{submitOnChange:true,closeOnSubmit:false,handler:TerranSheet.onFormSubmit},actions:{rollSkill:TerranSheet.rollSkill,rollAttribute:TerranSheet.rollAttribute,changeTab:TerranSheet.changeTab,toggleEquipped:TerranSheet.toggleEquipped,createEquipment:TerranSheet.createEquipment,saveEquipment:TerranSheet.saveEquipment,removeEquipment:TerranSheet.removeEquipment,toggleEquipmentDetails:TerranSheet.toggleEquipmentDetails,editEquipment:TerranSheet.editEquipment,toggleEquipmentMenu:TerranSheet.toggleEquipmentMenu,attackWeapon:TerranSheet.attackWeapon,disarmWeapon:TerranSheet.disarmWeapon,pushTarget:TerranSheet.pushTarget,toggleChargingDefense:TerranSheet.toggleChargingDefense,reloadWeapon:TerranSheet.reloadWeapon,chooseItemImage:TerranSheet.chooseItemImage,applyPhysicalDamage:TerranSheet.applyPhysicalDamage,resolveWounds:TerranSheet.resolveWounds,adjustWound:TerranSheet.adjustWound,applyBleedTick:TerranSheet.applyBleedTick,setWoundCondition:TerranSheet.setWoundCondition,setDeceased:TerranSheet.setDeceased,editPermanentInjury:TerranSheet.editPermanentInjury,removePermanentInjury:TerranSheet.removePermanentInjury}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/terran-sheet.hbs"}};
  _activeTab="overview";
  _damageDraft={damage:0,penetration:0,rending:0};
@@ -219,6 +219,33 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const result=disarmResult(roll.total,tough,chosen.targetHands);
   const name=victim?.name??"Manual target";
   await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:esc(this.document.name)+" — Disarm ("+esc(item.name)+")",content:'<div class="sc-attack-details"><strong>'+(result.success?"SUCCESS":"FAILURE")+'</strong> — Disarm vs '+esc(name)+'<p>Special attack: '+roll.total+' vs Toughness '+result.dc+' (base '+tough+', held item +'+(Number(chosen.targetHands)===2?5:2)+')</p><p>'+(result.success?"No damage. The target drops the item at its feet. GM handles the item drop.":"Item remains held.")+'</p><small>Item selection, actual drop and unarmed grab-on-success-by-5 are not automated.</small></div>'});
+ }
+
+ static async pushTarget(event,target){
+  if(!this.isEditable)return;
+  const selected=Array.from(game.user.targets);
+  if(selected.length>1){ui.notifications.warn("Target only one creature for Push.");return;}
+  const victim=selected[0]?.actor??null;
+  const toughness=disarmTargetToughness(victim);
+  const esc=foundry.utils.escapeHTML;
+  const attack=disarmAttackBonus(this.document,null);
+  // Push uses the special attack bonus, without the disarm weapon hand bonus.
+  const chosen=await foundry.applications.api.DialogV2.prompt({
+   window:{title:"Push — Special Combat Action"},
+   content:'<p>Push is a standard action. Roll special attack vs Toughness. It provokes an opportunity attack and can only affect a creature up to one size category larger.</p>'+
+    '<label>Target Toughness <input type="number" name="toughness" min="0" step="1" value="'+(toughness??"")+'" required/></label>'+
+    '<label>Additional modifier (size / situational) <input type="number" name="extra" step="1" value="0"/></label>'+
+    '<p>Special attack bonus: '+attack.base+' (Melee + half Strength + size). NPC size modifier must be entered manually if applicable.</p>',
+   ok:{label:"Roll Push",callback:(event,button)=>({toughness:button.form.elements.toughness.value,extra:button.form.elements.extra.value})},
+   rejectClose:false
+  });
+  if(!chosen)return;
+  const tough=Number(chosen.toughness),extra=Number(chosen.extra);
+  if(chosen.toughness===""||!Number.isFinite(tough)||tough<0||!Number.isFinite(extra)){ui.notifications.warn("Enter valid Toughness and modifier values.");return;}
+  const roll=await new Roll("1d20 + @bonus",{bonus:attack.base+extra}).evaluate();
+  const result=pushResult(roll.total,tough);
+  const name=victim?.name??"Manual target";
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:esc(this.document.name)+" — Push",content:'<div class="sc-attack-details"><strong>'+(result.success?"SUCCESS":"FAILURE")+'</strong> — Push vs '+esc(name)+'<p>Special attack: '+roll.total+' vs Toughness '+result.dc+' (margin '+result.margin+')</p><p>'+(result.success?"Push target back <strong>"+result.squares+" square"+(result.squares===1?"":"s")+"</strong>.":"Target is not pushed.")+'</p><small>Movement is GM-controlled. Push provokes an opportunity attack. Target must be no more than one size category larger.</small></div>'});
  }
 
 }
