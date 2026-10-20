@@ -39,3 +39,13 @@
 .terran-hud fieldset.hud-equipment-fields{border:0;padding:6px 0;margin:0;min-width:0}
 .terran-hud fieldset.hud-equipment-fields:disabled input,.terran-hud fieldset.hud-equipment-fields:disabled select{opacity:.8;cursor:default}
 .terran-hud .hud-equipment-save{display:flex;justify-content:flex-end;margin-top:10px}
+
+/* Make item equipped control truly centered inside its own 24px target. */
+.terran-hud .hud-equipment-heading .hud-equip-toggle{display:inline-grid!important;grid-template-columns:24px auto;align-items:center;column-gap:5px;min-height:28px;height:28px;padding:0!important;line-height:normal!important}
+.terran-hud .hud-equipment-heading .hud-equip-checkbox{width:24px;height:24px;display:grid;place-items:center;line-height:0}
+.terran-hud .hud-equipment-heading .hud-equip-checkbox input[type=checkbox]{box-sizing:border-box;position:static!important;display:block!important;float:none!important;transform:none!important;margin:0!important;padding:0!important;justify-self:center;align-self:center;width:16px!important;height:16px!important;min-width:16px!important;max-width:16px!important;accent-color:#85c9dc}
+.terran-hud .hud-equipment-heading .hud-equip-toggle>span:last-child{line-height:18px;align-self:center}
+.terran-hud .hud-equipment-heading .hud-equipment-primary-save{width:auto;min-width:56px;padding:4px 10px;height:27px;background:#335d68;color:#eaffff;border:1px solid #8acddd}
+.terran-hud .hud-xp-line{display:flex;align-items:center;gap:8px}.terran-hud .hud-xp-line input{min-width:0;flex:1}.terran-hud .hud-xp-line strong{white-space:nowrap;font-size:12px;color:#8dd7f1}
+.terran-hud .hud-power-select select{display:block;width:100%;height:28px;background:#081218;color:#f2f6f7;border:1px solid #4b6570}
+.terran-hud .hud-power-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.terran-hud .hud-power-stats>div{background:#15272f;padding:10px;font-size:12px}.terran-hud .hud-power-stats b{display:block;font-size:18px;color:#8dd7f1}
