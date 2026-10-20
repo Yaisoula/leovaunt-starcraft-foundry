@@ -24,3 +24,18 @@
 .terran-hud .hud-tab-content:focus-visible{outline:1px solid #8cd4ea;outline-offset:-1px}
 
 .terran-hud .hud-combat-weapon{border:1px solid #566b78;background:#14252e;padding:11px;margin:10px 0}.terran-hud .hud-combat-weapon>span{display:block;color:#9ec0ce;font-size:11px;margin:5px 0}.terran-hud .hud-weapon-values{display:flex;flex-wrap:wrap;gap:12px;font-size:12px}.terran-hud .hud-weapon-values b{color:#88d2e9}.terran-hud .hud-weapon-actions{display:flex;gap:8px;margin-top:10px}.terran-hud .hud-weapon-actions button{width:auto;padding:5px 14px;background:#234453;color:#d0edf5;border:1px solid #7194a4}.terran-hud .hud-weapon-actions button:disabled{opacity:.45}
+
+/* Compact item rows and context menu; controls align independently of global HUD styles. */
+.terran-hud .hud-equipment-heading{display:flex;align-items:center;min-height:30px;gap:9px;margin-bottom:0}
+.terran-hud .hud-equipment-heading .hud-equip-toggle{display:inline-flex!important;flex:0 0 auto;align-items:center;gap:6px;height:24px;line-height:1;margin:0;padding:0;cursor:pointer}
+.terran-hud .hud-equipment-heading .hud-equip-toggle input[type="checkbox"]{appearance:auto!important;position:static!important;display:block!important;margin:0!important;padding:0!important;width:16px!important;height:16px!important;min-width:16px;flex:none;vertical-align:middle;accent-color:#85c9dc}
+.terran-hud .hud-equipment-heading .hud-equip-toggle span{display:block;line-height:16px}
+.terran-hud .hud-equipment-heading .hud-equipment-title{flex:1;min-width:0;width:auto;height:auto;min-height:26px;text-align:left;padding:4px 8px;border:0;background:transparent;color:#e9f4f7;font-weight:700;cursor:pointer}
+.terran-hud .hud-equipment-heading .hud-equipment-more{flex:none;width:29px;min-width:29px;height:26px;font-size:18px}
+.terran-hud .hud-equipment-menu{display:flex;justify-content:flex-end;gap:8px;margin:6px 0}
+.terran-hud .hud-equipment-menu button,.terran-hud .hud-equipment-save button{width:auto;height:auto;min-width:70px;padding:5px 11px;border:1px solid #7295a2;background:#1a3946;color:#d2eff8}
+.terran-hud .hud-equipment-name{display:block;margin:10px 0}
+.terran-hud .hud-equipment-name input{display:block;width:100%;height:27px}
+.terran-hud fieldset.hud-equipment-fields{border:0;padding:6px 0;margin:0;min-width:0}
+.terran-hud fieldset.hud-equipment-fields:disabled input,.terran-hud fieldset.hud-equipment-fields:disabled select{opacity:.8;cursor:default}
+.terran-hud .hud-equipment-save{display:flex;justify-content:flex-end;margin-top:10px}
