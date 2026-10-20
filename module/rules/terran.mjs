@@ -23,7 +23,7 @@ export function calculateTerran(s,items=[],woundPoints={}){
  toughness:10+p.defensiveTraining+a.strength+c.sizeToughness+c.toughnessMisc,
  resolve:10+p.mentalTraining+a.willpower+c.resolveMisc,
  damageThreshold:16+p.durability+a.fortitude+c.sizeToughness+c.thresholdMisc,
- damageResistance:h(a.fortitude)+c.armorResistance+armorResistance+c.resistanceMisc-wp.damageResistance,
+ damageResistance:Math.max(0,h(a.fortitude)+c.armorResistance+armorResistance+c.resistanceMisc-wp.damageResistance),
  psionicResistance:3*a.willpower+c.psiLevel+h(p.mentalTraining)+c.psionicMisc,
  moveSpeed:4+h(a.agility)+c.speedMisc-wp.moveSpeed,
  shiftSpeed:1+Math.floor(a.agility/5)+c.shiftMisc,
