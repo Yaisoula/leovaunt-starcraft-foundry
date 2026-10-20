@@ -1,3 +1,4 @@
+import {grabAthletics,grabToughness,grabState,startGrab,endGrab} from "../rules/grab.mjs";
 import {setProneStatus} from "../rules/wounds.mjs";
 import {disarmAttackBonus,disarmTargetToughness,disarmResult,pushResult} from "../rules/disarm.mjs";
 import {chargeAttackModifiers,chargingState,setChargingDefense} from "../rules/charging.mjs";
@@ -8,9 +9,9 @@ import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {targetProfile,previewPhysicalDamage,attackDetailHtml,traitsForWeapon} from "../rules/targeting.mjs";
 import {resolvePhysicalDamage} from "../rules/damage.mjs";
 export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,disarmWeapon:NpcSheet.disarmWeapon,pushTarget:NpcSheet.pushTarget,knockDownTarget:NpcSheet.knockDownTarget,toggleChargingDefense:NpcSheet.toggleChargingDefense,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,disarmWeapon:NpcSheet.disarmWeapon,pushTarget:NpcSheet.pushTarget,knockDownTarget:NpcSheet.knockDownTarget,grabTarget:NpcSheet.grabTarget,releaseGrab:NpcSheet.releaseGrab,toggleChargingDefense:NpcSheet.toggleChargingDefense,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/npc-sheet.hbs"}};
- async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,effectiveDefenses:{defense:this.document.system.defenses.defense-actorWoundPenalties(this.document).defense-(chargingState(this.document)?2:0),damageResistance:Math.max(0,this.document.system.defenses.damageResistance-actorWoundPenalties(this.document).damageResistance)},woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),permanentWounds:permanentWoundState(this.document),chargingDefense:chargingState(this.document),isGM:game.user.isGM,woundConditions:woundConditions(this.document),items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i,woundState(this.document).points),range:i.system.range,rate:i.system.rateOfFire}))};}
+ async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,grabInfo:grabState(this.document),effectiveDefenses:{defense:this.document.system.defenses.defense-actorWoundPenalties(this.document).defense-(chargingState(this.document)?2:0),damageResistance:Math.max(0,this.document.system.defenses.damageResistance-actorWoundPenalties(this.document).damageResistance)},woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),permanentWounds:permanentWoundState(this.document),chargingDefense:chargingState(this.document),isGM:game.user.isGM,woundConditions:woundConditions(this.document),items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i,woundState(this.document).points),range:i.system.range,rate:i.system.rateOfFire}))};}
  async _onRender(context,options){await super._onRender(context,options);const root=this.element,chargeBox=root?.querySelector("[data-npc-charge]"),moveBox=root?.querySelector("[data-npc-action-move]");const updatePreview=()=>{root?.querySelectorAll("[data-npc-weapon-preview]").forEach(row=>{const updatePreview=()=>{const charge=chargeBox?.checked===true,move=moveBox?.checked===true;const accuracy=Number(row.dataset.baseAccuracy)||0,damage=Number(row.dataset.baseDamage)||0;const a=row.querySelector("[data-preview-accuracy]"),d=row.querySelector("[data-preview-damage]");if(a)a.textContent=String(accuracy+(charge?5:move?-2:0));if(d)d.textContent=String(damage+(charge&&row.dataset.melee==="true"?10:0));};});};for(const box of [chargeBox,moveBox])box?.addEventListener("change",()=>{if(box.checked){const other=box===chargeBox?moveBox:chargeBox;if(other)other.checked=false;}updatePreview();});updatePreview();}
  static async save(event,form,formData){await this.document.update(formData.object);}
  static async rollNpcAttack(event,target){
@@ -200,6 +201,39 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
    catch(error){proneMessage="Could not apply Prone automatically ("+esc(error.message)+"). GM must apply it manually.";ui.notifications.warn("Knock Down succeeded but Prone could not be applied automatically.");}
   }
   await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:esc(this.document.name)+" — Knock Down",content:'<div class="sc-attack-details"><strong>'+(success?"SUCCESS":"FAILURE")+'</strong> — Knock Down vs '+esc(victim?.name??"Manual target")+'<p>Special attack: '+roll.total+' vs Toughness '+tough+'</p><p>'+(success?"Target knocked Prone. "+proneMessage:"Target remains standing.")+'</p><small>Standard action; no damage. GM adjudicates target eligibility.</small></div>'});
+ }
+
+ static async grabTarget(){
+  if(!this.isEditable)return;
+  const selected=Array.from(game.user.targets);
+  if(selected.length!==1){ui.notifications.warn("Target exactly one creature to initiate a Grab.");return;}
+  const victim=selected[0]?.actor;
+  if(!victim||!["terran","npc"].includes(victim.type)){ui.notifications.warn("Grab supports Terran and NPC targets.");return;}
+  if(victim.id===this.document.id){ui.notifications.warn("You cannot grab yourself.");return;}
+  if(grabState(this.document)||grabState(victim)){ui.notifications.warn("One participant is already in a tracked Grab; multi-character Grabs require GM handling.");return;}
+  const base=grabAthletics(this.document),tough=grabToughness(victim),esc=foundry.utils.escapeHTML;
+  const chosen=await foundry.applications.api.DialogV2.prompt({
+   window:{title:"Grab — "+victim.name},
+   content:'<p>Grab is a standard action that provokes an opportunity attack. Roll Athletics plus special-combat size modifier vs target Toughness.</p>'+
+    '<label>Athletics + size bonus <input type="number" name="bonus" step="1" value="'+(base??0)+'" required/></label>'+
+    '<label>Target Toughness <input type="number" name="toughness" min="0" step="1" value="'+tough+'" required/></label>'+
+    '<p>'+(base===null?"NPC Athletics is not stored yet; enter the correct bonus manually.":"Athletics and size bonus prefilled from your character.")+'</p>',
+   ok:{label:"Roll Grab",callback:(event,button)=>({bonus:button.form.elements.bonus.value,toughness:button.form.elements.toughness.value})},rejectClose:false
+  });
+  if(!chosen)return;
+  const bonus=Number(chosen.bonus),dc=Number(chosen.toughness);
+  if(chosen.bonus===""||chosen.toughness===""||!Number.isFinite(bonus)||!Number.isFinite(dc)||dc<0){ui.notifications.warn("Enter valid Athletics bonus and Toughness.");return;}
+  const roll=await new Roll("1d20 + @bonus",{bonus}).evaluate();
+  const success=roll.total>=dc;
+  let note="";
+  if(success){try{await startGrab(this.document,victim);note="Grab tracked for both actors. Both are Immobilized and limited to standard actions until released.";}
+   catch(error){note="Grab succeeded, but state could not be tracked: "+error.message;ui.notifications.warn(note);}}
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],flavor:esc(this.document.name)+" — Grab",content:'<div class="sc-attack-details"><strong>'+(success?"SUCCESS":"FAILURE")+'</strong> — Grab vs '+esc(victim.name)+'<p>Athletics: '+roll.total+' vs Toughness '+dc+'</p><p>'+(success?esc(note):"Grab fails.")+'</p><small>Initiating Grab provokes an opportunity attack. Immobilized/action restrictions are reminders, not enforced automatically. Escape, slam, movement, and multi-character Grabs require GM adjudication.</small></div>'});
+  await this.render();
+ }
+ static async releaseGrab(){
+  if(!this.isEditable)return;
+  try{await endGrab(this.document);await this.render();}catch(error){ui.notifications.warn(error.message);}
  }
 
 }
