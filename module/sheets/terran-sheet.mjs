@@ -103,12 +103,13 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
    const hailfire=(hit?mode.hailfire:(area&&!mode.suppress&&mode.hailfire>=2?Math.floor(mode.hailfire/2):0))+traits.hailfire;
    if(damage<=0)continue;
    if(!hailfire&&!area&&!mode.suppress)this._damageDraft={damage,penetration:traits.penetration,rending:traits.rending};
-   const preview=resolveAttackDamage({damage,penetration:traits.penetration,rending:traits.rending,hailfire,shield:t.profile.shield,shieldArmor:t.profile.shieldArmor,resistance:t.profile.damageResistance,protection:t.profile.protection,hp:t.profile.hp,threshold:t.profile.damageThreshold,damageType:traits.damageType,targetIsConstruct:t.profile.targetIsConstruct,targetArmorType:t.profile.targetArmorType,psionicResistance:t.profile.psionicResistance});
    if(!traits.hasUnsupportedEffects){
     const index=applications.length;
     applications.push({uuid:t.profile.actor.uuid,type:t.profile.actor.type,damage,penetration:traits.penetration,rending:traits.rending,hailfire,damageType:traits.damageType,targetIsConstruct:t.profile.targetIsConstruct,individualWounds:area||hailfire>0,suppress:Boolean(mode.suppress)});
     gmDetails+='<button type="button" data-sc-apply-damage="'+index+'">Apply Damage — '+esc(t.name)+'</button>';
+   }
   }
+  gmDetails+='</div>';
   if(traits.hasUnsupportedEffects)ui.notifications.warn("Some weapon traits require manual resolution.");
   await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],content:breakdown});
   if(targets.length){
