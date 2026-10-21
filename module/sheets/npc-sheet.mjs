@@ -1,3 +1,4 @@
+import {adjustMorale,applyWoundMorale} from "../rules/morale.mjs";
 import {grabAthletics,grabToughness,grabState,startGrab,endGrab} from "../rules/grab.mjs";
 import {setProneStatus} from "../rules/wounds.mjs";
 import {disarmAttackBonus,disarmTargetToughness,disarmResult,pushResult} from "../rules/disarm.mjs";
@@ -9,7 +10,7 @@ import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {targetProfile,previewPhysicalDamage,attackDetailHtml,traitsForWeapon} from "../rules/targeting.mjs";
 import {resolvePhysicalDamage} from "../rules/damage.mjs";
 export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,disarmWeapon:NpcSheet.disarmWeapon,pushTarget:NpcSheet.pushTarget,knockDownTarget:NpcSheet.knockDownTarget,grabTarget:NpcSheet.grabTarget,releaseGrab:NpcSheet.releaseGrab,toggleChargingDefense:NpcSheet.toggleChargingDefense,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{adjustMorale:NpcSheet.adjustMorale,rollNpcAttack:NpcSheet.rollNpcAttack,disarmWeapon:NpcSheet.disarmWeapon,pushTarget:NpcSheet.pushTarget,knockDownTarget:NpcSheet.knockDownTarget,grabTarget:NpcSheet.grabTarget,releaseGrab:NpcSheet.releaseGrab,toggleChargingDefense:NpcSheet.toggleChargingDefense,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/npc-sheet.hbs"}};
  async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,grabInfo:grabState(this.document),effectiveDefenses:{defense:this.document.system.defenses.defense-actorWoundPenalties(this.document).defense-(chargingState(this.document)?2:0),damageResistance:Math.max(0,this.document.system.defenses.damageResistance-actorWoundPenalties(this.document).damageResistance)},woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),permanentWounds:permanentWoundState(this.document),chargingDefense:chargingState(this.document),isGM:game.user.isGM,woundConditions:woundConditions(this.document),items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i,woundState(this.document).points),range:i.system.range,rate:i.system.rateOfFire}))};}
  async _onRender(context,options){await super._onRender(context,options);const root=this.element,chargeBox=root?.querySelector("[data-npc-charge]"),moveBox=root?.querySelector("[data-npc-action-move]");const updatePreview=()=>{root?.querySelectorAll("[data-npc-weapon-preview]").forEach(row=>{const updatePreview=()=>{const charge=chargeBox?.checked===true,move=moveBox?.checked===true;const accuracy=Number(row.dataset.baseAccuracy)||0,damage=Number(row.dataset.baseDamage)||0;const a=row.querySelector("[data-preview-accuracy]"),d=row.querySelector("[data-preview-damage]");if(a)a.textContent=String(accuracy+(charge?5:move?-2:0));if(d)d.textContent=String(damage+(charge&&row.dataset.melee==="true"?10:0));};});};for(const box of [chargeBox,moveBox])box?.addEventListener("change",()=>{if(box.checked){const other=box===chargeBox?moveBox:chargeBox;if(other)other.checked=false;}updatePreview();});updatePreview();}
@@ -46,6 +47,7 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
   if(!this.isEditable)return;const actor=this.document,count=Number(actor.system.resources.woundsPending||0);
   if(!Number.isSafeInteger(count)||count<=0){ui.notifications.warn("No pending wounds.");return;}
   const result=await recordWounds(actor,{count,source:"Pending physical damage"});
+  await applyWoundMorale(actor);
   await actor.update({"system.resources.woundsPending":0});
   const immediate=await applyImmediateWoundEffect(actor,result.location,count);
   const threshold=await applyWoundThreshold(actor,result);
@@ -234,5 +236,7 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
   if(!this.isEditable)return;
   try{await endGrab(this.document);await this.render();}catch(error){ui.notifications.warn(error.message);}
  }
+
+ static async adjustMorale(event,target){if(!this.isEditable)return;try{await adjustMorale(this.document,Number(target.dataset.delta));await this.render();}catch(error){ui.notifications.error(error.message);}}
 
 }

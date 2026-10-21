@@ -9,7 +9,7 @@ export class TerranDataModel extends foundry.abstract.TypeDataModel{
  attributes:new f.SchemaField(Object.fromEntries(["strength","instinct","agility","fortitude","intelligence","willpower"].map(k=>[k,new f.SchemaField({base:num(),misc:num()})]))),
  skills:new f.SchemaField(Object.fromEntries(SKILLS.map(k=>[k,new f.SchemaField({ranks:num(),misc:num(),temp:num(),focus:num()})]))),
  prowess:new f.SchemaField(Object.fromEntries(PROWESS.map(k=>[k,new f.SchemaField({ranks:num(),focus:num()})]))),
- resources:new f.SchemaField({hp:pair(),shields:pair(),protection:num(),woundsPending:num(),fatigue:pair(),healing:pair(),credits:num(),characteristicPoints:num(),bankedPoints:num()}),
+ resources:new f.SchemaField({hp:pair(),shields:pair(),protection:num(),morale:new f.NumberField({required:true,initial:1,integer:true,min:-5,max:5}),woundsPending:num(),fatigue:pair(),healing:pair(),credits:num(),characteristicPoints:num(),bankedPoints:num()}),
  combat:new f.SchemaField({shieldArmor:num(),armorDefensePenalty:num(),armorResistance:num(),psiLevel:num(),sizeDefense:num(),sizeToughness:num(),bonusHP:num(),defenseMisc:num(),toughnessMisc:num(),resolveMisc:num(),thresholdMisc:num(),resistanceMisc:num(),psionicMisc:num(),speedMisc:num(),shiftMisc:num(),initiativeMisc:num(),moraleMisc:num()}),notes:str()};}
 }
 export class DeferredDataModel extends foundry.abstract.TypeDataModel{static defineSchema(){return {notes:str()};}}
@@ -21,7 +21,7 @@ export class NpcDataModel extends foundry.abstract.TypeDataModel {
   species:new f.StringField({required:true,initial:"terran",choices:["terran","zerg","protoss","other"]}),
   faction:str(),level:num(1),role:str(),notes:str(),
   defenses:new f.SchemaField({defense:num(10),toughness:num(10),resolve:num(10),damageResistance:num(),damageThreshold:num(16),shieldArmor:num()}),
-  resources:new f.SchemaField({hp:pair(),shields:pair(),protection:num(),woundsPending:num()}),
+  resources:new f.SchemaField({hp:pair(),shields:pair(),protection:num(),morale:new f.NumberField({required:true,initial:1,integer:true,min:-5,max:5}),woundsPending:num()}),
   attributes:new f.SchemaField(Object.fromEntries(["strength","instinct","agility","fortitude","intelligence","willpower"].map(k=>[k,num()]))),
   prowess:new f.SchemaField({melee:num(),ranged:num()}),
   };

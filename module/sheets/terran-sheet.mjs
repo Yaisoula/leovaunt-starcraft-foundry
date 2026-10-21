@@ -1,3 +1,4 @@
+import {adjustMorale,applyWoundMorale} from "../rules/morale.mjs";
 import {setWoundPoints,setBleedValue} from "../rules/wounds.mjs";
 import {grabAthletics,grabToughness,grabState,startGrab,endGrab} from "../rules/grab.mjs";
 import {setProneStatus} from "../rules/wounds.mjs";
@@ -10,7 +11,7 @@ import {resolvePhysicalDamage,resolveAttackDamage,parsePhysicalTraits} from "../
 import {weaponAttack,resolveWeaponDamage,firingModes,selectedFiringMode} from "../rules/weapon-attacks.mjs";
 import {calculateTerran,ATTRIBUTE_LABELS,SKILL_ATTRIBUTES,PROWESS_LABELS,label} from "../rules/terran.mjs";
 export class TerranSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud"],position:{width:1000,height:760},window:{resizable:true,title:"Terran Personnel HUD"},form:{submitOnChange:true,closeOnSubmit:false,handler:TerranSheet.onFormSubmit},actions:{rollSkill:TerranSheet.rollSkill,rollProwess:TerranSheet.rollProwess,rollAttribute:TerranSheet.rollAttribute,changeTab:TerranSheet.changeTab,toggleEquipped:TerranSheet.toggleEquipped,createEquipment:TerranSheet.createEquipment,saveEquipment:TerranSheet.saveEquipment,removeEquipment:TerranSheet.removeEquipment,toggleEquipmentDetails:TerranSheet.toggleEquipmentDetails,editEquipment:TerranSheet.editEquipment,toggleEquipmentMenu:TerranSheet.toggleEquipmentMenu,attackWeapon:TerranSheet.attackWeapon,disarmWeapon:TerranSheet.disarmWeapon,pushTarget:TerranSheet.pushTarget,knockDownTarget:TerranSheet.knockDownTarget,grabTarget:TerranSheet.grabTarget,releaseGrab:TerranSheet.releaseGrab,toggleChargingDefense:TerranSheet.toggleChargingDefense,reloadWeapon:TerranSheet.reloadWeapon,chooseItemImage:TerranSheet.chooseItemImage,applyPhysicalDamage:TerranSheet.applyPhysicalDamage,resolveWounds:TerranSheet.resolveWounds,describeWound:TerranSheet.describeWound,adjustWound:TerranSheet.adjustWound,saveBleed:TerranSheet.saveBleed,applyBleedTick:TerranSheet.applyBleedTick,setWoundCondition:TerranSheet.setWoundCondition,setDeceased:TerranSheet.setDeceased,editPermanentInjury:TerranSheet.editPermanentInjury,removePermanentInjury:TerranSheet.removePermanentInjury}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud"],position:{width:1000,height:760},window:{resizable:true,title:"Terran Personnel HUD"},form:{submitOnChange:true,closeOnSubmit:false,handler:TerranSheet.onFormSubmit},actions:{adjustMorale:TerranSheet.adjustMorale,rollSkill:TerranSheet.rollSkill,rollProwess:TerranSheet.rollProwess,rollAttribute:TerranSheet.rollAttribute,changeTab:TerranSheet.changeTab,toggleEquipped:TerranSheet.toggleEquipped,createEquipment:TerranSheet.createEquipment,saveEquipment:TerranSheet.saveEquipment,removeEquipment:TerranSheet.removeEquipment,toggleEquipmentDetails:TerranSheet.toggleEquipmentDetails,editEquipment:TerranSheet.editEquipment,toggleEquipmentMenu:TerranSheet.toggleEquipmentMenu,attackWeapon:TerranSheet.attackWeapon,disarmWeapon:TerranSheet.disarmWeapon,pushTarget:TerranSheet.pushTarget,knockDownTarget:TerranSheet.knockDownTarget,grabTarget:TerranSheet.grabTarget,releaseGrab:TerranSheet.releaseGrab,toggleChargingDefense:TerranSheet.toggleChargingDefense,reloadWeapon:TerranSheet.reloadWeapon,chooseItemImage:TerranSheet.chooseItemImage,applyPhysicalDamage:TerranSheet.applyPhysicalDamage,resolveWounds:TerranSheet.resolveWounds,describeWound:TerranSheet.describeWound,adjustWound:TerranSheet.adjustWound,saveBleed:TerranSheet.saveBleed,applyBleedTick:TerranSheet.applyBleedTick,setWoundCondition:TerranSheet.setWoundCondition,setDeceased:TerranSheet.setDeceased,editPermanentInjury:TerranSheet.editPermanentInjury,removePermanentInjury:TerranSheet.removePermanentInjury}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/terran-sheet.hbs"}};
  _activeTab="overview";
  _damageDraft={damage:0,penetration:0,rending:0};
@@ -175,6 +176,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   if(!this.isEditable)return;const actor=this.document,count=Number(actor.system.resources.woundsPending||0);
   if(!Number.isSafeInteger(count)||count<=0){ui.notifications.warn("No pending wounds.");return;}
   const result=await recordWounds(actor,{count,source:"Pending physical damage"});
+  await applyWoundMorale(actor);
   await actor.update({"system.resources.woundsPending":0});
   const immediate=await applyImmediateWoundEffect(actor,result.location,count);
   const threshold=await applyWoundThreshold(actor,result);
@@ -382,5 +384,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   if(!this.isEditable)return;
   try{await endGrab(this.document);await this.render();}catch(error){ui.notifications.warn(error.message);}
  }
+
+ static async adjustMorale(event,target){if(!this.isEditable)return;try{await adjustMorale(this.document,Number(target.dataset.delta));await this.render();}catch(error){ui.notifications.error(error.message);}}
 
 }
