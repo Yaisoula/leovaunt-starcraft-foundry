@@ -53,9 +53,6 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const profiles=selected.map(token=>targetProfile(token.actor)).filter(Boolean);
   if(selected.length!==profiles.length){ui.notifications.warn("Some targets cannot be resolved automatically.");return;}
   if(!mode.burst&&!mode.cone&&selected.length>1){ui.notifications.warn("This firing mode targets one creature. Select one target.");return;}
-  const defenseText=container?.querySelector("[data-target-defense]")?.value?.trim()??"";
-  const manualDefense=defenseText===""?null:Number(defenseText);
-  if(manualDefense!==null&&(!Number.isFinite(manualDefense)||manualDefense<0)){ui.notifications.warn("Target Defense must be nonnegative.");return;}
   const charge=mode.id==="normal"&&container?.querySelector("[data-charge]")?.checked===true;
   const actionMove=!charge&&container?.querySelector("[data-action-move]")?.checked===true;
   const chargeMods=charge?chargeAttackModifiers(a):null;
@@ -65,7 +62,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const roll=await new Roll(formula,{bonus:accuracy}).evaluate();
   if(a.requiresAmmo)await item.update({"system.currentShots":a.ammo-mode.ammo});
   const esc=foundry.utils.escapeHTML,traits=parsePhysicalTraits(item.system.specialTraits);
-  const targets=profiles.length?profiles.map(p=>({name:p.actor.name,defense:Number(p.defense),profile:p})):(manualDefense!==null?[{name:"Manual target",defense:manualDefense,profile:null}]:[]);
+  const targets=profiles.length?profiles.map(p=>({name:p.actor.name,defense:Number(p.defense),profile:p})):[];
   const applications=[];
   let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong><p>Accuracy: '+accuracy+' · Strikes: '+mode.strikes+' · Ammunition used: '+mode.ammo+'</p>';
   if(mode.burst)breakdown+='<p>Burst ('+mode.burst+') · Hailfire ('+mode.hailfire+'). GM confirms which targets are in the area. No attack overage; missed area attacks deal half base damage unless protected by cover.</p>';
