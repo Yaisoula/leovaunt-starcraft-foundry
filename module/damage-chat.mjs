@@ -78,7 +78,7 @@ export function registerDamageChatActions(){
      if(!actor||actor.type!==entry.type)throw Error("Target actor is no longer available.");
      const profile=targetProfile(actor);
      if(!profile)throw Error("Target does not support physical damage.");
-     const result=resolveAttackDamage({...entry,shield:profile.shield,shieldArmor:profile.shieldArmor,resistance:profile.damageResistance,protection:profile.protection,hp:profile.hp,threshold:profile.damageThreshold});
+     const result=resolveAttackDamage({...entry,shield:profile.shield,shieldArmor:profile.shieldArmor,resistance:profile.damageResistance,protection:profile.protection,hp:profile.hp,threshold:profile.damageThreshold,damageType:entry.damageType||"physical",targetIsConstruct:profile.targetIsConstruct,targetArmorType:profile.targetArmorType,psionicResistance:profile.psionicResistance});
      const confirm=await foundry.applications.api.DialogV2.confirm({
       window:{title:"Apply Damage — "+actor.name},
       content:"<p>Apply <strong>"+entry.damage+"</strong> base damage to <strong>"+foundry.utils.escapeHTML(actor.name)+"</strong>?</p><p>Shields −"+result.shieldAbsorbed+" · Protection −"+result.protectionAbsorbed+" · HP −"+result.hpLost+" · Pending wounds +"+result.wounds+"</p><p>Uses target's <strong>current</strong> defenses and resources.</p>",
