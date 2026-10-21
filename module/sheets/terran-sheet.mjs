@@ -86,7 +86,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
    breakdown+='<p>Preview: Shields −'+preview.shieldAbsorbed+' · Protection −'+preview.protectionAbsorbed+' · HP −'+preview.hpLost+' · Pending wounds +'+preview.wounds+'</p>';
    if(!traits.hasUnsupportedEffects){
     const index=applications.length;
-    applications.push({uuid:t.profile.actor.uuid,type:t.profile.actor.type,damage,penetration:traits.penetration,rending:traits.rending,hailfire});
+    applications.push({uuid:t.profile.actor.uuid,type:t.profile.actor.type,damage,penetration:traits.penetration,rending:traits.rending,hailfire,individualWounds:area||hailfire>0});
     breakdown+='<button type="button" data-sc-apply-damage="'+index+'">Apply Damage — '+esc(t.name)+'</button>';
    }else breakdown+='<p>Weapon has special damage traits; GM must resolve manually.</p>';
   }
