@@ -1,4 +1,4 @@
-import {adjustMorale} from "../rules/morale.mjs";
+import {adjustMorale,applyWoundMorale} from "../rules/morale.mjs";
 import {setWoundPoints,setBleedValue} from "../rules/wounds.mjs";
 import {grabAthletics,grabToughness,grabState,startGrab,endGrab} from "../rules/grab.mjs";
 import {setProneStatus} from "../rules/wounds.mjs";
@@ -176,6 +176,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   if(!this.isEditable)return;const actor=this.document,count=Number(actor.system.resources.woundsPending||0);
   if(!Number.isSafeInteger(count)||count<=0){ui.notifications.warn("No pending wounds.");return;}
   const result=await recordWounds(actor,{count,source:"Pending physical damage"});
+  await applyWoundMorale(actor);
   await actor.update({"system.resources.woundsPending":0});
   const immediate=await applyImmediateWoundEffect(actor,result.location,count);
   const threshold=await applyWoundThreshold(actor,result);
