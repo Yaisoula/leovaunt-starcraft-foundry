@@ -82,10 +82,11 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
    return mode.burst||mode.cone?a.damage:result.damage;
   })):a.damage;
   const damageTone=allMissed?"miss":natural20?"crit":"normal";
-  const diceBreakdown=esc(shownDice)+" "+formatSigned(accuracy)+(effectiveTotal!==shownTotal?" · Rule-adjusted from "+shownTotal:"");
+  const diceBreakdown=esc(shownDice)+" "+formatSigned(accuracy)+(natural20?" + 10":natural1?"":"");
   let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong>'+
-   '<div class="sc-roll-card sc-roll-card--'+rollTone+'"><div class="sc-roll-card-label">ATTACK</div><div class="sc-roll-card-total">'+effectiveTotal+'</div><div class="sc-roll-card-breakdown">d20: '+diceBreakdown+'</div></div>'+
-   '<div class="sc-roll-card sc-roll-card--damage sc-roll-card--'+damageTone+'"><div class="sc-roll-card-label">DAMAGE</div><div class="sc-roll-card-total">'+baseDisplayDamage+'</div><div class="sc-roll-card-breakdown">Pre-resistance'+(!targets.length?' · No target selected':targets.length>1?' · Highest target damage':'')+'</div></div>'+
+   '<div class="sc-roll-card sc-roll-card--'+rollTone+'"><div class="sc-roll-card-label">ATTACK</div><div class="sc-roll-card-total">'+(natural1?'Automatic Miss':effectiveTotal)+'</div><div class="sc-roll-card-breakdown">'+(natural1?'Rolled 1 · '+formatSigned(accuracy):diceBreakdown)+'</div></div>'+
+   '<div class="sc-roll-card sc-roll-card--damage sc-roll-card--'+damageTone+'"><div class="sc-roll-card-label">DAMAGE</div><div class="sc-roll-card-total">'+baseDisplayDamage+'</div></div>'+
+   (jammed?'<div class="sc-roll-card sc-roll-card--jam">GUN JAMMED!</div>':'')+
    '<p>Accuracy: '+accuracy+' · Strikes: '+mode.strikes+' · Ammunition used: '+mode.ammo+'</p>';
   if(mode.burst)breakdown+='<p>Burst ('+mode.burst+') · Hailfire ('+mode.hailfire+'). GM confirms which targets are in the area. No attack overage; missed area attacks deal half base damage unless protected by cover.</p>';
   else if(mode.hailfire)breakdown+='<p>Hailfire ('+mode.hailfire+'): post-resistance multiplier ×'+(mode.hailfire+1)+'.</p>';
@@ -135,6 +136,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const capacity=Math.max(0,Number(item.system.shots)||0);
   if(!capacity){ui.notifications.warn("This weapon has no configured magazine.");return;}
   await item.update({"system.currentShots":capacity});
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),content:"<strong>"+foundry.utils.escapeHTML(this.document.name)+"</strong> reloads their "+foundry.utils.escapeHTML(item.name)+"."});
   ui.notifications.info("Magazine reset to full. Reserve ammunition and reload actions are not yet tracked.");
   await this.render();
  }
