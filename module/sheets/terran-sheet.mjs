@@ -11,7 +11,7 @@ import {resolvePhysicalDamage,resolveAttackDamage,parsePhysicalTraits} from "../
 import {weaponAttack,resolveWeaponDamage,firingModes,selectedFiringMode,isJamEligible,naturalAttackTotal} from "../rules/weapon-attacks.mjs";
 import {calculateTerran,ATTRIBUTE_LABELS,SKILL_ATTRIBUTES,PROWESS_LABELS,label} from "../rules/terran.mjs";
 export class TerranSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud"],position:{width:1000,height:760},window:{resizable:true,title:"Terran Personnel HUD"},form:{submitOnChange:true,closeOnSubmit:false,handler:TerranSheet.onFormSubmit},actions:{adjustMorale:TerranSheet.adjustMorale,rollSkill:TerranSheet.rollSkill,rollProwess:TerranSheet.rollProwess,rollAttribute:TerranSheet.rollAttribute,changeTab:TerranSheet.changeTab,toggleEquipped:TerranSheet.toggleEquipped,createEquipment:TerranSheet.createEquipment,saveEquipment:TerranSheet.saveEquipment,removeEquipment:TerranSheet.removeEquipment,toggleEquipmentDetails:TerranSheet.toggleEquipmentDetails,editEquipment:TerranSheet.editEquipment,toggleEquipmentMenu:TerranSheet.toggleEquipmentMenu,attackWeapon:TerranSheet.attackWeapon,disarmWeapon:TerranSheet.disarmWeapon,pushTarget:TerranSheet.pushTarget,knockDownTarget:TerranSheet.knockDownTarget,grabTarget:TerranSheet.grabTarget,releaseGrab:TerranSheet.releaseGrab,toggleChargingDefense:TerranSheet.toggleChargingDefense,reloadWeapon:TerranSheet.reloadWeapon,unjamWeapon:TerranSheet.unjamWeapon,chooseItemImage:TerranSheet.chooseItemImage,applyPhysicalDamage:TerranSheet.applyPhysicalDamage,resolveWounds:TerranSheet.resolveWounds,describeWound:TerranSheet.describeWound,adjustWound:TerranSheet.adjustWound,saveBleed:TerranSheet.saveBleed,applyBleedTick:TerranSheet.applyBleedTick,setWoundCondition:TerranSheet.setWoundCondition,setDeceased:TerranSheet.setDeceased,editPermanentInjury:TerranSheet.editPermanentInjury,removePermanentInjury:TerranSheet.removePermanentInjury}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud"],position:{width:1000,height:760},window:{resizable:true,title:"Terran Personnel HUD"},form:{submitOnChange:true,closeOnSubmit:false,handler:TerranSheet.onFormSubmit},actions:{levelUp:TerranSheet.levelUp,adjustMorale:TerranSheet.adjustMorale,rollSkill:TerranSheet.rollSkill,rollProwess:TerranSheet.rollProwess,rollAttribute:TerranSheet.rollAttribute,changeTab:TerranSheet.changeTab,toggleEquipped:TerranSheet.toggleEquipped,createEquipment:TerranSheet.createEquipment,saveEquipment:TerranSheet.saveEquipment,removeEquipment:TerranSheet.removeEquipment,toggleEquipmentDetails:TerranSheet.toggleEquipmentDetails,editEquipment:TerranSheet.editEquipment,toggleEquipmentMenu:TerranSheet.toggleEquipmentMenu,attackWeapon:TerranSheet.attackWeapon,disarmWeapon:TerranSheet.disarmWeapon,pushTarget:TerranSheet.pushTarget,knockDownTarget:TerranSheet.knockDownTarget,grabTarget:TerranSheet.grabTarget,releaseGrab:TerranSheet.releaseGrab,toggleChargingDefense:TerranSheet.toggleChargingDefense,reloadWeapon:TerranSheet.reloadWeapon,unjamWeapon:TerranSheet.unjamWeapon,chooseItemImage:TerranSheet.chooseItemImage,applyPhysicalDamage:TerranSheet.applyPhysicalDamage,resolveWounds:TerranSheet.resolveWounds,describeWound:TerranSheet.describeWound,adjustWound:TerranSheet.adjustWound,saveBleed:TerranSheet.saveBleed,applyBleedTick:TerranSheet.applyBleedTick,setWoundCondition:TerranSheet.setWoundCondition,setDeceased:TerranSheet.setDeceased,editPermanentInjury:TerranSheet.editPermanentInjury,removePermanentInjury:TerranSheet.removePermanentInjury}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/terran-sheet.hbs"}};
  _activeTab="overview";
  _damageDraft={damage:0,penetration:0,rending:0};
@@ -21,6 +21,24 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
  _firingModeSelections=new Map();
  _combatOptionSelections=new Map();
  _savedScrollPositions=new Map();
+ static async levelUp(event,target){
+  if(!this.isEditable)return;
+  const actor=this.document,s=actor.system;
+  const level=Math.trunc(Number(s.level)||1),xp=Math.trunc(Number(s.experience)||0);
+  if(level>=30){ui.notifications.warn("Maximum level is 30.");return;}
+  if(xp<500){ui.notifications.warn("500 XP is required to level up.");return;}
+  const gains={heroic:4,advanced:5,epic:6};
+  const gained=gains[s.powerLevel]??4;
+  const confirmed=await foundry.applications.api.DialogV2.confirm({
+   window:{title:"Level Up — "+actor.name},
+   content:"<p>Advance <strong>"+foundry.utils.escapeHTML(actor.name)+"</strong> to level <strong>"+(level+1)+"</strong>?</p><p>Spend 500 XP and gain <strong>"+gained+"</strong> characteristic points. Skill and attribute caps update with the new level.</p>",
+   rejectClose:false,modal:true
+  });
+  if(!confirmed)return;
+  if(Number(actor.system.level)!==level||Number(actor.system.experience)!==xp){ui.notifications.warn("Progression changed. Review and try again.");return;}
+  await actor.update({"system.level":level+1,"system.experience":xp-500,"system.resources.characteristicPoints":Math.max(0,Number(s.resources.characteristicPoints)||0)+gained});
+  ui.notifications.info(actor.name+" advanced to level "+(level+1)+".");
+ }
  static async changeTab(event,target){const next=target.dataset.tab;if(!["overview","combat","inventory","talents","progression","psionics","bio"].includes(next))return;this._activeTab=next;await this.render();}
  _inventoryEntry(item){return {id:item.id,name:item.name,type:item.type,equipped:Boolean(item.system.equipped),quantity:item.system.quantity,weight:item.system.weight,cost:item.system.cost,tier:item.system.tier,weaponClass:item.system.weaponClass,hands:item.system.hands,damage:item.system.damage,accuracy:item.system.accuracy,rateOfFire:item.system.rateOfFire,range:item.system.range,shots:item.system.shots,currentShots:item.system.currentShots,ammunition:item.system.ammunition,powerRating:item.system.powerRating,specialTraits:item.system.specialTraits,armorResistance:item.system.armorResistance,armorDefensePenalty:item.system.armorDefensePenalty,armorType:item.system.armorType,armorRating:item.system.armorRating,notes:item.system.notes,img:item.img,expanded:this._expandedEquipment.has(item.id),editing:this._editingEquipment.has(item.id),menuOpen:this._menuEquipment===item.id};}
  async _prepareContext(options){const context=await super._prepareContext(options),actor=this.document,s=actor.system,d=calculateTerran(s,actor.items,woundState(actor).points);
