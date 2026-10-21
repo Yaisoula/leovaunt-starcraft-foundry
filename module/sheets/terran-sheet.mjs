@@ -87,13 +87,8 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
    '<div class="sc-roll-card sc-roll-card--'+rollTone+'"><div class="sc-roll-card-label">ATTACK</div><div class="sc-roll-card-total">'+(natural1?'Automatic Miss':effectiveTotal)+'</div><div class="sc-roll-card-breakdown">'+(natural1?'Rolled 1 · '+formatSigned(accuracy):diceBreakdown)+'</div></div>'+
    '<div class="sc-roll-card sc-roll-card--damage sc-roll-card--'+damageTone+'"><div class="sc-roll-card-label">DAMAGE</div><div class="sc-roll-card-total">'+baseDisplayDamage+'</div></div>'+
    (jammed?'<div class="sc-roll-card sc-roll-card--jam">GUN JAMMED!</div>':'')+
-   '<p>Accuracy: '+accuracy+' · Strikes: '+mode.strikes+' · Ammunition used: '+mode.ammo+'</p>';
-  if(mode.burst)breakdown+='<p>Burst ('+mode.burst+') · Hailfire ('+mode.hailfire+'). GM confirms which targets are in the area. No attack overage; missed area attacks deal half base damage unless protected by cover.</p>';
-  else if(mode.hailfire)breakdown+='<p>Hailfire ('+mode.hailfire+'): post-resistance multiplier ×'+(mode.hailfire+1)+'.</p>';
-  if(mode.suppress)breakdown+='<p><strong>Suppressing Fire:</strong> Cone ('+mode.cone+'), full-round action. GM tracks ongoing suppression, morale, Slowed, and triggered follow-up attacks.</p>';
-  if(natural20)breakdown+='<p><strong>Natural 20:</strong> use 30 + attack bonus for attack overages.</p>';
-  if(natural1)breakdown+='<p><strong>Natural 1:</strong> automatic miss.'+(jammed?' Weapon jammed — clear it with the third weapon button.':'')+'</p>';
-  if(!targets.length)breakdown+='<p>No target selected. Damage must be resolved manually.</p>';
+   '<p class="sc-ammo-used">Ammunition used: '+mode.ammo+'</p></div>';
+  let gmDetails='<div class="sc-gm-damage"><strong>'+esc(this.document.name)+' — '+esc(item.name)+'</strong><p>Attack: '+effectiveTotal+' · '+esc(mode.label)+'</p>';
   for(const t of targets){
    const attackTotal=natural20?30+accuracy:natural1?-10+accuracy:roll.total;
    const outcome=resolveWeaponDamage(a,attackTotal,t.defense);
@@ -102,22 +97,28 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
    const area=!!(mode.burst||mode.cone);
    const damage=hit?(area?a.damage:outcome.damage):((area&&!mode.suppress)?Math.floor(a.damage/2):0);
    const hailfire=(hit?mode.hailfire:(area&&!mode.suppress&&mode.hailfire>=2?Math.floor(mode.hailfire/2):0))+traits.hailfire;
-   breakdown+='<p><strong>'+esc(t.name)+': '+(hit?'HIT':'MISS')+'</strong> vs Defense '+t.defense+' · Base damage '+damage+'</p>';
+   gmDetails+='<p><strong>'+esc(t.name)+': '+(hit?'HIT':'MISS')+'</strong> vs Defense '+t.defense+' · Base damage '+damage+'</p>';
    if(damage<=0)continue;
-   breakdown+='<p>Penetration '+traits.penetration+' · Rending '+traits.rending+(hailfire?' · Hailfire ('+hailfire+')':'')+'</p>';
+   gmDetails+='<p>Penetration '+traits.penetration+' · Rending '+traits.rending+(hailfire?' · Hailfire ('+hailfire+')':'')+'</p>';
    if(!hailfire&&!area&&!mode.suppress)this._damageDraft={damage,penetration:traits.penetration,rending:traits.rending};
-   if(!t.profile){breakdown+='<p>No actor selected for automated application.</p>';continue;}
+   if(!t.profile){gmDetails+='<p>No actor selected for automated application.</p>';continue;}
    const preview=resolveAttackDamage({damage,penetration:traits.penetration,rending:traits.rending,hailfire,shield:t.profile.shield,shieldArmor:t.profile.shieldArmor,resistance:t.profile.damageResistance,protection:t.profile.protection,hp:t.profile.hp,threshold:t.profile.damageThreshold,damageType:traits.damageType,targetIsConstruct:t.profile.targetIsConstruct,targetArmorType:t.profile.targetArmorType,psionicResistance:t.profile.psionicResistance});
-   breakdown+='<p>Preview: Shields −'+preview.shieldAbsorbed+' · Protection −'+preview.protectionAbsorbed+' · HP −'+preview.hpLost+' · Pending wounds +'+preview.wounds+'</p>';
+   gmDetails+='<p>Preview: Shields −'+preview.shieldAbsorbed+' · Protection −'+preview.protectionAbsorbed+' · HP −'+preview.hpLost+' · Pending wounds +'+preview.wounds+'</p>';
    if(!traits.hasUnsupportedEffects){
     const index=applications.length;
     applications.push({uuid:t.profile.actor.uuid,type:t.profile.actor.type,damage,penetration:traits.penetration,rending:traits.rending,hailfire,damageType:traits.damageType,targetIsConstruct:t.profile.targetIsConstruct,individualWounds:area||hailfire>0,suppress:Boolean(mode.suppress)});
-    breakdown+='<button type="button" data-sc-apply-damage="'+index+'">Apply Damage — '+esc(t.name)+'</button>';
-   }else breakdown+='<p>Weapon has special damage traits; GM must resolve manually.</p>';
+    gmDetails+='<button type="button" data-sc-apply-damage="'+index+'">Apply Damage — '+esc(t.name)+'</button>';
+   }else gmDetails+='<p>Weapon has special damage traits; GM must resolve manually.</p>';
   }
-  breakdown+='<small>GM must confirm targets and area coverage. Apply Damage uses the target’s defenses and resources at confirmation time. Click Pending Wounds to resolve wound locations afterward.</small></div>';
+  gmDetails+='<small>GM must confirm targets and area coverage. Apply Damage uses the target’s defenses and resources at confirmation time. Click Pending Wounds to resolve wound locations afterward.</small></div>';
   if(traits.hasUnsupportedEffects)ui.notifications.warn("Some weapon traits require manual resolution.");
-  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],content:breakdown,flavor:esc(item.name)+" — "+esc(mode.label),flags:{"leovaunt-starcraft":{damageApplications:applications,appliedDamage:[]}}});
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],content:breakdown});
+  if(targets.length){
+   const gmRecipients=ChatMessage.getWhisperRecipients("GM");
+   if(gmRecipients.length){
+    await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),whisper:gmRecipients.map(u=>u.id),content:gmDetails,flags:{"leovaunt-starcraft":{damageApplications:applications,appliedDamage:[]}}});
+   }else ui.notifications.warn("No GM is available to receive the private damage application message.");
+  }
   await this.render();
  }
  static async unjamWeapon(event,target){
