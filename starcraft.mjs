@@ -28,3 +28,9 @@ function syncProneFromEffect(effect){
 Hooks.on("createActiveEffect",syncProneFromEffect);
 Hooks.on("deleteActiveEffect",syncProneFromEffect);
 Hooks.on("updateActiveEffect",syncProneFromEffect);
+
+// New Terran characters choose a power level once; existing characters remain locked as-is.
+Hooks.on("preCreateActor",(actor)=>{
+ if(actor.type!=="terran")return;
+ actor.updateSource({"flags.leovaunt-starcraft.powerLevelConfirmed":false});
+});
