@@ -82,13 +82,14 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
    return mode.burst||mode.cone?a.damage:result.damage;
   })):a.damage;
   const damageTone=allMissed?"miss":natural20?"crit":"normal";
-  const baseAccuracy=accuracy-(charge?5:0);
+  const baseAccuracy=accuracy-(charge?5:0)+(actionMove?2:0);
   const rollParts=[esc(shownDice),formatSigned(baseAccuracy)];
   if(charge)rollParts.push("+ 5");
+  if(actionMove)rollParts.push("− 2");
   if(natural20)rollParts.push("+ 10");
   const diceBreakdown=rollParts.join(" ");
   let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong>'+
-   '<div class="sc-roll-card sc-roll-card--'+rollTone+'"><div class="sc-roll-card-label">'+(charge?'ATTACK - CHARGE':'ATTACK')+'</div><div class="sc-roll-card-total">'+(natural1?'Automatic Miss':effectiveTotal)+'</div><div class="sc-roll-card-breakdown">'+diceBreakdown+'</div></div>'+
+   '<div class="sc-roll-card sc-roll-card--'+rollTone+'"><div class="sc-roll-card-label">'+(charge?'ATTACK - CHARGE':actionMove?'ATTACK - ACTION MOVE':'ATTACK')+'</div><div class="sc-roll-card-total">'+(natural1?'Automatic Miss':effectiveTotal)+'</div><div class="sc-roll-card-breakdown">'+diceBreakdown+'</div></div>'+
    '<div class="sc-roll-card sc-roll-card--damage sc-roll-card--'+damageTone+'"><div class="sc-roll-card-label">DAMAGE</div><div class="sc-roll-card-total">'+baseDisplayDamage+'</div></div>'+
    (jammed?'<div class="sc-roll-card sc-roll-card--jam">GUN JAMMED!</div>':'')+
    '<p class="sc-ammo-used">Ammunition used: '+mode.ammo+'</p></div>';
