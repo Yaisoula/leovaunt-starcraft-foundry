@@ -94,7 +94,6 @@ export function registerDamageChatActions(){
      });
      await fresh.setFlag(FLAG,"appliedDamage",[...(fresh.getFlag(FLAG,"appliedDamage")??[]),index]);
      if(result.wounds>0)await fresh.setFlag(FLAG,woundCountsFlag,{...(fresh.getFlag(FLAG,woundCountsFlag)??{}),[index]:result.wounds});
-     await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor}),content:"<strong>Damage applied to "+foundry.utils.escapeHTML(actor.name)+"</strong><p>Shields −"+result.shieldAbsorbed+" · Protection −"+result.protectionAbsorbed+" · HP −"+result.hpLost+" · Pending wounds +"+result.wounds+"</p>"});
      if(entry.suppress&&(result.hpLost>0||result.protectionAbsorbed>0))ui.notifications.info("Suppressing Fire hit: GM should mark Slowed on the target token and reduce morale by 1.");
      ui.notifications.info("Damage applied to "+actor.name+(result.wounds?" — resolve wounds in chat.":""));
     }catch(error){ui.notifications.error(error.message);}
