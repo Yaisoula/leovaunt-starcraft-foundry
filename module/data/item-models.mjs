@@ -9,7 +9,7 @@ export class StarcraftItemDataModel extends foundry.abstract.TypeDataModel{
  // Weapon statistics, per Leovaunt Core Rulebook, Weapons chapter.
  weaponClass:string(),hands:number(2,1),damage:number(),accuracy:number(),rateOfFire:string("Average"),
  range:string("Medium"),shots:number(0,0),currentShots:number(0,0),ammunition:string(),
- powerRating:number(),specialTraits:string(),
+ powerRating:number(),specialTraits:string(),jammed:new f.BooleanField({initial:false}),
  // Armor values are additional to the character's manual situational modifiers.
  armorResistance:number(),armorDefensePenalty:number(),armorType:string(),armorRating:number()
  }; }
