@@ -1,20 +1,21 @@
+import {conditionRows,setCombatCondition,advanceConditionRounds,conditionAttackBlocked,conditionSkillModifier} from "../rules/conditions.mjs";
 import {grabAthletics,grabToughness,grabState,startGrab,endGrab} from "../rules/grab.mjs";
 import {setProneStatus} from "../rules/wounds.mjs";
 import {disarmAttackBonus,disarmTargetToughness,disarmResult,pushResult} from "../rules/disarm.mjs";
 import {chargeAttackModifiers,chargingState,setChargingDefense} from "../rules/charging.mjs";
 import {permanentWoundState,applyWoundThreshold,gmSetDeceased,gmUpdatePermanentInjury} from "../rules/wounds.mjs";
-import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints,woundConditions,applyImmediateWoundEffect,gmSetWoundCondition,applyBleedTick,droppableOneHandedItems,dropHeldItem} from "../rules/wounds.mjs";
+import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints,combatConditions:conditionRows(this.document),woundConditions,applyImmediateWoundEffect,gmSetWoundCondition,applyBleedTick,droppableOneHandedItems,dropHeldItem} from "../rules/wounds.mjs";
 import {actorWoundPenalties} from "../rules/wounds.mjs";
 import {weaponAttack,resolveWeaponDamage} from "../rules/weapon-attacks.mjs";
 import {targetProfile,previewPhysicalDamage,attackDetailHtml,traitsForWeapon} from "../rules/targeting.mjs";
 import {resolvePhysicalDamage} from "../rules/damage.mjs";
 export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
- static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{rollNpcAttack:NpcSheet.rollNpcAttack,disarmWeapon:NpcSheet.disarmWeapon,pushTarget:NpcSheet.pushTarget,knockDownTarget:NpcSheet.knockDownTarget,grabTarget:NpcSheet.grabTarget,releaseGrab:NpcSheet.releaseGrab,toggleChargingDefense:NpcSheet.toggleChargingDefense,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
+ static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","npc-hud"],position:{width:760,height:700},window:{resizable:true,title:"StarCraft NPC Record"},form:{submitOnChange:true,closeOnSubmit:false,handler:NpcSheet.save},actions:{setCombatStatus:NpcSheet.setCombatStatus,advanceCombatStatuses:NpcSheet.advanceCombatStatuses,rollNpcAttack:NpcSheet.rollNpcAttack,disarmWeapon:NpcSheet.disarmWeapon,pushTarget:NpcSheet.pushTarget,knockDownTarget:NpcSheet.knockDownTarget,grabTarget:NpcSheet.grabTarget,releaseGrab:NpcSheet.releaseGrab,toggleChargingDefense:NpcSheet.toggleChargingDefense,applyNpcDamage:NpcSheet.applyNpcDamage,reloadNpcWeapon:NpcSheet.reloadNpcWeapon,resolveWounds:NpcSheet.resolveWounds,adjustWound:NpcSheet.adjustWound,applyBleedTick:NpcSheet.applyBleedTick,setWoundCondition:NpcSheet.setWoundCondition,setDeceased:NpcSheet.setDeceased,editPermanentInjury:NpcSheet.editPermanentInjury,removePermanentInjury:NpcSheet.removePermanentInjury}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/npc-sheet.hbs"}};
  async _prepareContext(options){const context=await super._prepareContext(options);return {...context,actor:this.document,s:this.document.system,grabInfo:grabState(this.document),effectiveDefenses:{defense:this.document.system.defenses.defense-actorWoundPenalties(this.document).defense-(chargingState(this.document)?2:0),damageResistance:Math.max(0,this.document.system.defenses.damageResistance-actorWoundPenalties(this.document).damageResistance)},woundRows:LOCATIONS.map(key=>({key,label:key[0].toUpperCase()+key.slice(1),points:woundState(this.document).points?.[key]??0,immediate:WOUND_RULES[key].immediate,ongoing:WOUND_RULES[key].ongoing})),woundHistory:[...(woundState(this.document).history??[])].reverse().slice(0,15),permanentWounds:permanentWoundState(this.document),chargingDefense:chargingState(this.document),isGM:game.user.isGM,woundConditions:woundConditions(this.document),items:this.document.items.filter(i=>i.type==="weapon").map(i=>({id:i.id,name:i.name,attack:weaponAttack(this.document.system,i,woundState(this.document).points),range:i.system.range,rate:i.system.rateOfFire}))};}
  async _onRender(context,options){await super._onRender(context,options);const root=this.element,chargeBox=root?.querySelector("[data-npc-charge]"),moveBox=root?.querySelector("[data-npc-action-move]");const updatePreview=()=>{root?.querySelectorAll("[data-npc-weapon-preview]").forEach(row=>{const updatePreview=()=>{const charge=chargeBox?.checked===true,move=moveBox?.checked===true;const accuracy=Number(row.dataset.baseAccuracy)||0,damage=Number(row.dataset.baseDamage)||0;const a=row.querySelector("[data-preview-accuracy]"),d=row.querySelector("[data-preview-damage]");if(a)a.textContent=String(accuracy+(charge?5:move?-2:0));if(d)d.textContent=String(damage+(charge&&row.dataset.melee==="true"?10:0));};});};for(const box of [chargeBox,moveBox])box?.addEventListener("change",()=>{if(box.checked){const other=box===chargeBox?moveBox:chargeBox;if(other)other.checked=false;}updatePreview();});updatePreview();}
  static async save(event,form,formData){await this.document.update(formData.object);}
- static async rollNpcAttack(event,target){
+ static async rollNpcAttack(event,target){if(conditionAttackBlocked(this.document)){ui.notifications.warn("Cannot attack while Stunned or Helpless.");return;}
   if(!this.isEditable)return;
   const item=this.document.items.get(target.dataset.itemId);if(!item||item.type!=="weapon")return;
   const a=weaponAttack(this.document.system,item,woundState(this.document).points);
@@ -233,6 +234,20 @@ export class NpcSheet extends foundry.applications.api.HandlebarsApplicationMixi
  static async releaseGrab(){
   if(!this.isEditable)return;
   try{await endGrab(this.document);await this.render();}catch(error){ui.notifications.warn(error.message);}
+ }
+
+ static async setCombatStatus(event,target){
+  if(!this.isEditable)return;
+  const id=target.dataset.condition;
+  const active=target.dataset.active==="true";
+  const input=this.element.querySelector('[data-condition-rounds="'+id+'"]');
+  try{await setCombatCondition(this.document,id,{active,rounds:active?Number(input?.value||0):0});await this.render();}
+  catch(error){ui.notifications.error(error.message);}
+ }
+ static async advanceCombatStatuses(){
+  if(!this.isEditable)return;
+  try{const result=await advanceConditionRounds(this.document);ui.notifications.info("Condition round advanced"+(result.expired.length?"; expired: "+result.expired.join(", "):""));await this.render();}
+  catch(error){ui.notifications.error(error.message);}
  }
 
 }
