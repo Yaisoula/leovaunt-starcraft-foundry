@@ -74,14 +74,14 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const targets=profiles.length?profiles.map(p=>({name:p.actor.name,defense:Number(p.defense),profile:p})):[];
   const applications=[];
   const allMissed=natural1||(targets.length>0&&targets.every(t=>!resolveWeaponDamage(a,effectiveTotal,t.defense).hit));
-  const rollTone=natural20?"crit":allMissed?"miss":"normal";
+  const rollTone=allMissed?"miss":natural20?"crit":"normal";
   const formatSigned=n=>n>=0?"+"+n:String(n);
-  const baseDisplayDamage=natural1?0:targets.length?Math.max(0,...targets.map(t=>{
+  const baseDisplayDamage=allMissed?0:targets.length?Math.max(0,...targets.map(t=>{
    const result=resolveWeaponDamage(a,effectiveTotal,t.defense);
    if(!result.hit)return mode.burst||mode.cone?Math.floor(a.damage/2):0;
    return mode.burst||mode.cone?a.damage:result.damage;
   })):a.damage;
-  const damageTone=natural20?"crit":allMissed?"miss":"normal";
+  const damageTone=allMissed?"miss":natural20?"crit":"normal";
   const diceBreakdown=esc(shownDice)+" "+formatSigned(accuracy)+(effectiveTotal!==shownTotal?" · Rule-adjusted from "+shownTotal:"");
   let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong>'+
    '<div class="sc-roll-card sc-roll-card--'+rollTone+'"><div class="sc-roll-card-label">ATTACK</div><div class="sc-roll-card-total">'+effectiveTotal+'</div><div class="sc-roll-card-breakdown">d20: '+diceBreakdown+'</div></div>'+
