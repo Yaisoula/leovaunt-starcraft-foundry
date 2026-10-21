@@ -13,8 +13,7 @@ export function resolvePhysicalDamage({damage=0,penetration=0,rending=0,shield=0
  const shieldIncoming=shields>0?Math.max(0,raw-armor):0;
  const shieldAbsorbed=Math.min(shields,shieldIncoming);
  const spill=shields>0?Math.max(0,shieldIncoming-shieldAbsorbed):raw;
- const bypass=type==="piercing"||type==="poison"||(type==="emp"&&targetIsConstruct)||(type==="energy"&&/^(light|none|no armor)$/i.test(String(targetArmorType).trim()));
- const effectiveResistance=type==="psionic"?whole(psionicResistance):bypass?0:Math.max(0,dr-pen);
+ const effectiveResistance=Math.max(0,dr-pen);
  const afterResistance=Math.max(0,spill-effectiveResistance);
  const protectionAbsorbed=Math.min(pp,afterResistance);
  const hpLost=Math.min(health,Math.max(0,afterResistance-protectionAbsorbed));
@@ -48,7 +47,8 @@ export function resolveAttackDamage({damage=0,penetration=0,rending=0,hailfire=0
    bodyMultiplier=1;
   }
  }
- const effectiveResistance=Math.max(0,dr-pen);
+ const bypass=type==="piercing"||type==="poison"||(type==="emp"&&targetIsConstruct)||(type==="energy"&&/^(light|none|no armor)$/i.test(String(targetArmorType).trim()));
+ const effectiveResistance=type==="psionic"?whole(psionicResistance):bypass?0:Math.max(0,dr-pen);
  const perHitAfterResistance=Math.max(0,spill-effectiveResistance);
  const postResistance=perHitAfterResistance*bodyMultiplier;
  const protectionAbsorbed=Math.min(pp,postResistance);
