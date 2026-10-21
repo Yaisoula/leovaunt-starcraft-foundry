@@ -82,13 +82,18 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
    return mode.burst||mode.cone?a.damage:result.damage;
   })):a.damage;
   const damageTone=allMissed?"miss":natural20?"crit":"normal";
-  const diceBreakdown=esc(shownDice)+" "+formatSigned(accuracy)+(natural20?" + 10":natural1?"":"");
+  const baseAccuracy=accuracy-(charge?5:0)+(actionMove?2:0);
+  const rollParts=[esc(shownDice),formatSigned(baseAccuracy)];
+  if(charge)rollParts.push("+ 5");
+  if(actionMove)rollParts.push("− 2");
+  if(natural20)rollParts.push("+ 10");
+  const diceBreakdown=rollParts.join(" ");
   let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong>'+
-   '<div class="sc-roll-card sc-roll-card--'+rollTone+'"><div class="sc-roll-card-label">ATTACK</div><div class="sc-roll-card-total">'+(natural1?'Automatic Miss':effectiveTotal)+'</div><div class="sc-roll-card-breakdown">'+(natural1?'Rolled 1 · '+formatSigned(accuracy):diceBreakdown)+'</div></div>'+
+   '<div class="sc-roll-card sc-roll-card--'+rollTone+'"><div class="sc-roll-card-label">'+(charge?'ATTACK - CHARGE':actionMove?'ATTACK - ACTION MOVE':'ATTACK')+'</div><div class="sc-roll-card-total">'+(natural1?'Automatic Miss':effectiveTotal)+'</div><div class="sc-roll-card-breakdown">'+diceBreakdown+'</div></div>'+
    '<div class="sc-roll-card sc-roll-card--damage sc-roll-card--'+damageTone+'"><div class="sc-roll-card-label">DAMAGE</div><div class="sc-roll-card-total">'+baseDisplayDamage+'</div></div>'+
    (jammed?'<div class="sc-roll-card sc-roll-card--jam">GUN JAMMED!</div>':'')+
    '<p class="sc-ammo-used">Ammunition used: '+mode.ammo+'</p></div>';
-  let gmDetails='<div class="sc-gm-damage"><strong>'+esc(this.document.name)+' — '+esc(item.name)+'</strong><p>Attack: '+effectiveTotal+' · '+esc(mode.label)+'</p>';
+  let gmDetails='<div class="sc-gm-damage">';
   for(const t of targets){
    const attackTotal=natural20?30+accuracy:natural1?-10+accuracy:roll.total;
    const outcome=resolveWeaponDamage(a,attackTotal,t.defense);
@@ -97,20 +102,15 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
    const area=!!(mode.burst||mode.cone);
    const damage=hit?(area?a.damage:outcome.damage):((area&&!mode.suppress)?Math.floor(a.damage/2):0);
    const hailfire=(hit?mode.hailfire:(area&&!mode.suppress&&mode.hailfire>=2?Math.floor(mode.hailfire/2):0))+traits.hailfire;
-   gmDetails+='<p><strong>'+esc(t.name)+': '+(hit?'HIT':'MISS')+'</strong> vs Defense '+t.defense+' · Base damage '+damage+'</p>';
    if(damage<=0)continue;
-   gmDetails+='<p>Penetration '+traits.penetration+' · Rending '+traits.rending+(hailfire?' · Hailfire ('+hailfire+')':'')+'</p>';
    if(!hailfire&&!area&&!mode.suppress)this._damageDraft={damage,penetration:traits.penetration,rending:traits.rending};
-   if(!t.profile){gmDetails+='<p>No actor selected for automated application.</p>';continue;}
-   const preview=resolveAttackDamage({damage,penetration:traits.penetration,rending:traits.rending,hailfire,shield:t.profile.shield,shieldArmor:t.profile.shieldArmor,resistance:t.profile.damageResistance,protection:t.profile.protection,hp:t.profile.hp,threshold:t.profile.damageThreshold,damageType:traits.damageType,targetIsConstruct:t.profile.targetIsConstruct,targetArmorType:t.profile.targetArmorType,psionicResistance:t.profile.psionicResistance});
-   gmDetails+='<p>Preview: Shields −'+preview.shieldAbsorbed+' · Protection −'+preview.protectionAbsorbed+' · HP −'+preview.hpLost+' · Pending wounds +'+preview.wounds+'</p>';
    if(!traits.hasUnsupportedEffects){
     const index=applications.length;
     applications.push({uuid:t.profile.actor.uuid,type:t.profile.actor.type,damage,penetration:traits.penetration,rending:traits.rending,hailfire,damageType:traits.damageType,targetIsConstruct:t.profile.targetIsConstruct,individualWounds:area||hailfire>0,suppress:Boolean(mode.suppress)});
     gmDetails+='<button type="button" data-sc-apply-damage="'+index+'">Apply Damage — '+esc(t.name)+'</button>';
-   }else gmDetails+='<p>Weapon has special damage traits; GM must resolve manually.</p>';
+   }
   }
-  gmDetails+='<small>GM must confirm targets and area coverage. Apply Damage uses the target’s defenses and resources at confirmation time. Click Pending Wounds to resolve wound locations afterward.</small></div>';
+  gmDetails+='</div>';
   if(traits.hasUnsupportedEffects)ui.notifications.warn("Some weapon traits require manual resolution.");
   await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],content:breakdown});
   if(targets.length){
