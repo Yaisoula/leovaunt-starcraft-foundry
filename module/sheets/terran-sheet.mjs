@@ -6,7 +6,7 @@ import {chargeAttackModifiers,chargingState,setChargingDefense} from "../rules/c
 import {permanentWoundState,applyWoundThreshold,gmSetDeceased,gmUpdatePermanentInjury,setPermanentInjuryNotes} from "../rules/wounds.mjs";
 import {LOCATIONS,WOUND_RULES,woundState,recordWounds,gmSetWoundPoints,woundConditions,applyImmediateWoundEffect,gmSetWoundCondition,applyBleedTick,droppableOneHandedItems,dropHeldItem} from "../rules/wounds.mjs";
 import {targetProfile,previewPhysicalDamage} from "../rules/targeting.mjs";
-import {resolvePhysicalDamage,parsePhysicalTraits} from "../rules/damage.mjs";
+import {resolvePhysicalDamage,resolveAttackDamage,parsePhysicalTraits} from "../rules/damage.mjs";
 import {weaponAttack,resolveWeaponDamage,firingModes,selectedFiringMode} from "../rules/weapon-attacks.mjs";
 import {calculateTerran,ATTRIBUTE_LABELS,SKILL_ATTRIBUTES,PROWESS_LABELS,label} from "../rules/terran.mjs";
 export class TerranSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2){
@@ -65,26 +65,34 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   if(a.requiresAmmo)await item.update({"system.currentShots":a.ammo-mode.ammo});
   const esc=foundry.utils.escapeHTML,traits=parsePhysicalTraits(item.system.specialTraits);
   const targets=profiles.length?profiles.map(p=>({name:p.actor.name,defense:Number(p.defense),profile:p})):(manualDefense!==null?[{name:"Manual target",defense:manualDefense,profile:null}]:[]);
+  const applications=[];
   let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong><p>Accuracy: '+accuracy+' · Strikes: '+mode.strikes+' · Ammunition used: '+mode.ammo+'</p>';
-  if(mode.burst)breakdown+='<p>Burst ('+mode.burst+') area · Hailfire ('+mode.hailfire+'). GM confirms creatures in area; area attacks have no attack overage and deal half base damage on a miss.</p>';
-  else if(mode.hailfire)breakdown+='<p>Hailfire ('+mode.hailfire+'): multiply post-resistance damage ×'+(mode.hailfire+1)+'.</p>';
-  if(mode.suppress)breakdown+='<p><strong>Suppressing Fire:</strong> Cone ('+mode.cone+'), full-round action; no damage on misses. A target taking HP or Protection damage is Slowed for 1 round and loses 1 Morale (shields alone do not trigger this). Area persists until the start of the attacker’s next turn; entering costs 1 Morale unless Jaded or exempt. Ending a turn inside and in line of sight triggers two single-strike attacks, with no extra ammunition. GM tracks area, movement, conditions, and follow-up attacks.</p>';
-  if(mode.cone&&!mode.suppress)breakdown+='<p>Cone ('+mode.cone+')</p>';
-  if(!targets.length)breakdown+='<p>No target Defense provided; GM resolves hits and damage.</p>';
+  if(mode.burst)breakdown+='<p>Burst ('+mode.burst+') · Hailfire ('+mode.hailfire+'). GM confirms which targets are in the area. No attack overage; missed area attacks deal half base damage unless protected by cover.</p>';
+  else if(mode.hailfire)breakdown+='<p>Hailfire ('+mode.hailfire+'): post-resistance multiplier ×'+(mode.hailfire+1)+'.</p>';
+  if(mode.suppress)breakdown+='<p><strong>Suppressing Fire:</strong> Cone ('+mode.cone+'), full-round action. GM tracks ongoing suppression, morale, Slowed, and triggered follow-up attacks.</p>';
+  if(!targets.length)breakdown+='<p>No target selected. Damage must be resolved manually.</p>';
   for(const t of targets){
-    const outcome=resolveWeaponDamage(a,roll.total,t.defense);
-    const hit=outcome.hit;
-    const damage=hit?(mode.burst?a.damage:outcome.damage):((mode.burst&&!mode.suppress)?Math.floor(a.damage/2):0);
-    breakdown+='<p><strong>'+esc(t.name)+': '+(hit?'HIT':'MISS')+'</strong> vs Defense '+t.defense+' · Base pre-resistance damage '+damage+'</p>';
-    if(damage>0){
-      breakdown+='<p>Penetration: '+traits.penetration+' · Rending: '+traits.rending+(mode.hailfire?' · Hailfire ('+mode.hailfire+') applied AFTER resistance':'')+'</p>';
-      if(!mode.hailfire&&!mode.burst&&!mode.suppress)this._damageDraft={damage,penetration:traits.penetration,rending:traits.rending};
-      if(t.profile&&!mode.hailfire){const preview=previewPhysicalDamage(t.profile,damage,traits);breakdown+='<p>Preview: Shields -'+preview.shieldAbsorbed+' · Protection -'+preview.protectionAbsorbed+' · HP -'+preview.hpLost+' · Pending wounds +'+preview.wounds+'</p>';}
-    }
+   const outcome=resolveWeaponDamage(a,roll.total,t.defense);
+   const hit=outcome.hit;
+   const area=!!(mode.burst||mode.cone);
+   const damage=hit?(area?a.damage:outcome.damage):((area&&!mode.suppress)?Math.floor(a.damage/2):0);
+   const hailfire=hit?mode.hailfire:(area&&!mode.suppress&&mode.hailfire>=2?Math.floor(mode.hailfire/2):0);
+   breakdown+='<p><strong>'+esc(t.name)+': '+(hit?'HIT':'MISS')+'</strong> vs Defense '+t.defense+' · Base damage '+damage+'</p>';
+   if(damage<=0)continue;
+   breakdown+='<p>Penetration '+traits.penetration+' · Rending '+traits.rending+(hailfire?' · Hailfire ('+hailfire+')':'')+'</p>';
+   if(!hailfire&&!area&&!mode.suppress)this._damageDraft={damage,penetration:traits.penetration,rending:traits.rending};
+   if(!t.profile){breakdown+='<p>No actor selected for automated application.</p>';continue;}
+   const preview=resolveAttackDamage({damage,penetration:traits.penetration,rending:traits.rending,hailfire,shield:t.profile.shield,shieldArmor:t.profile.shieldArmor,resistance:t.profile.damageResistance,protection:t.profile.protection,hp:t.profile.hp,threshold:t.profile.damageThreshold});
+   breakdown+='<p>Preview: Shields −'+preview.shieldAbsorbed+' · Protection −'+preview.protectionAbsorbed+' · HP −'+preview.hpLost+' · Pending wounds +'+preview.wounds+'</p>';
+   if(!traits.hasUnsupportedEffects){
+    const index=applications.length;
+    applications.push({uuid:t.profile.actor.uuid,type:t.profile.actor.type,damage,penetration:traits.penetration,rending:traits.rending,hailfire});
+    breakdown+='<button type="button" data-sc-apply-damage="'+index+'">Apply Damage — '+esc(t.name)+'</button>';
+   }else breakdown+='<p>Weapon has special damage traits; GM must resolve manually.</p>';
   }
-  breakdown+='<small>Damage is not automatically applied. Hailfire, area effects, wound multipliers, and suppression effects require GM resolution after resistance. Select affected targets for area attacks.</small></div>';
+  breakdown+='<small>GM must confirm targets and area coverage. Apply Damage uses the target’s defenses and resources at confirmation time. Click Pending Wounds to resolve wound locations afterward.</small></div>';
   if(traits.hasUnsupportedEffects)ui.notifications.warn("Some weapon traits require manual resolution.");
-  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],content:breakdown,flavor:esc(item.name)+" — "+esc(mode.label)});
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),rolls:[roll],content:breakdown,flavor:esc(item.name)+" — "+esc(mode.label),flags:{"leovaunt-starcraft":{damageApplications:applications,appliedDamage:[]}}});
   await this.render();
  }
  static async reloadWeapon(event,target){
