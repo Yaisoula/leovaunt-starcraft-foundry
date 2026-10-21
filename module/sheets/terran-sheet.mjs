@@ -73,7 +73,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const effectiveTotal=natural20?30+accuracy:natural1?-10+accuracy:shownTotal;
   const targets=profiles.length?profiles.map(p=>({name:p.actor.name,defense:Number(p.defense),profile:p})):[];
   const applications=[];
-  let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong><p><strong>Attack Roll: '+esc(shownDice)+' + '+accuracy+' = '+shownTotal+'</strong>'+(effectiveTotal!==shownTotal?' · Rule-adjusted total: <strong>'+effectiveTotal+'</strong>':'')+'</p><p>Accuracy: '+accuracy+' · Strikes: '+mode.strikes+' · Ammunition used: '+mode.ammo+'</p>';
+  let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong><div class="sc-attack-roll" style="position:relative;display:inline-block;margin:8px 0"><div class="sc-attack-roll-total" tabindex="0" title="Hover or focus for dice and modifiers" style="display:inline-block;min-width:90px;padding:8px 18px;text-align:center;border:1px solid #777;border-radius:5px;background:#242b32;color:#fff;font-size:22px;font-weight:800;cursor:help">'+effectiveTotal+'</div><div class="sc-attack-roll-tooltip" style="display:none;position:absolute;z-index:100;top:100%;left:0;min-width:210px;padding:9px 12px;border:1px solid #777;border-radius:5px;background:#182630;color:#fff;box-shadow:0 4px 12px #0008;white-space:nowrap"><strong>Attack Roll</strong><div>Dice: '+esc(shownDice)+'</div><div>Accuracy modifier: '+(accuracy>=0?'+':'')+accuracy+'</div><div>Rolled total: '+shownTotal+'</div>'+(effectiveTotal!==shownTotal?'<div>Natural roll adjustment: '+effectiveTotal+'</div>':'')+'</div></div><p>Accuracy: '+accuracy+' · Strikes: '+mode.strikes+' · Ammunition used: '+mode.ammo+'</p>';
   if(mode.burst)breakdown+='<p>Burst ('+mode.burst+') · Hailfire ('+mode.hailfire+'). GM confirms which targets are in the area. No attack overage; missed area attacks deal half base damage unless protected by cover.</p>';
   else if(mode.hailfire)breakdown+='<p>Hailfire ('+mode.hailfire+'): post-resistance multiplier ×'+(mode.hailfire+1)+'.</p>';
   if(mode.suppress)breakdown+='<p><strong>Suppressing Fire:</strong> Cone ('+mode.cone+'), full-round action. GM tracks ongoing suppression, morale, Slowed, and triggered follow-up attacks.</p>';
@@ -111,6 +111,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const item=this.document.items.get(target.dataset.itemId);
   if(!item||item.type!=="weapon"||!item.system.equipped||!item.system.jammed)return;
   await item.update({"system.jammed":false});
+  await ChatMessage.create({speaker:ChatMessage.getSpeaker({actor:this.document}),content:"<strong>"+foundry.utils.escapeHTML(this.document.name)+"</strong> unjams their "+foundry.utils.escapeHTML(item.name)+". <small>(Standard action)</small>"});
   ui.notifications.info(item.name+" unjammed. Clearing a jam costs a standard action; track the action manually.");
   await this.render();
  }
