@@ -2,7 +2,7 @@
   "id": "leovaunt-starcraft",
   "title": "Leovaunt StarCraft RPG (Unofficial)",
   "description": "Unofficial Foundry v13 system — Terran character HUD alpha.",
-  "version": "0.1.0-alpha.34.0",
+  "version": "0.1.0-alpha.34.1",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
