@@ -5,7 +5,7 @@ const whole=(v,def=0)=>{const n=Number(v);return Number.isFinite(n)?Math.max(0,M
 export function parsePhysicalTraits(text=""){
  const source=String(text);
  const capture=name=>{const match=source.match(new RegExp("(?:^|[,;\\s])"+name+"\\s*\\(\\s*(\\d+)\\s*\\)","i"));return match?whole(match[1]):0;};
- return {penetration:capture("Penetration"),rending:capture("Rending"),hasUnsupportedEffects:/(?:hailfire|burst|energy damage|acid damage|emp|piercing|high explosive)/i.test(source)};
+ return {penetration:capture("Penetration"),rending:capture("Rending"),hailfire:capture("Hailfire"),damageType:/psionic (?:damage|burst)/i.test(source)?"psionic":/poison damage/i.test(source)?"poison":/emp damage/i.test(source)?"emp":/acid damage/i.test(source)?"acid":/energy damage/i.test(source)?"energy":/piercing damage/i.test(source)?"piercing":"physical",hasUnsupportedEffects:/(?:corrosion|flames|flash|energy drain|high explosive|smashing|cleaving|spread|twin.linked|recoil|scope|rocket|grenade|delay|line|cone|burst|bleed|unstable|venom|stun|slow|incendiary|emp damage|poison damage|psionic damage)/i.test(source)};
 }
 export function resolvePhysicalDamage({damage=0,penetration=0,rending=0,shield=0,shieldArmor=0,resistance=0,protection=0,hp=0,threshold=0}={}){
  const raw=whole(damage),shields=whole(shield),armor=whole(shieldArmor),dr=whole(resistance),pen=whole(penetration),rend=whole(rending),pp=whole(protection),health=whole(hp);
@@ -30,8 +30,8 @@ export function resolvePhysicalDamage({damage=0,penetration=0,rending=0,shield=0
  * hit can pass to the body. Protection absorbs post-resistance damage.
  * Wounds are tested against damage before protection, and Hailfire adds
  * extra wounds when the original hit crosses the threshold. */
-export function resolveAttackDamage({damage=0,penetration=0,rending=0,hailfire=0,shield=0,shieldArmor=0,resistance=0,protection=0,hp=0,threshold=1}={}){
- const raw=whole(damage),hf=Math.min(20,whole(hailfire)),multiplier=hf+1;
+export function resolveAttackDamage({damage=0,penetration=0,rending=0,hailfire=0,shield=0,shieldArmor=0,resistance=0,protection=0,hp=0,threshold=1,damageType="physical",targetIsConstruct=false,targetArmorType="",psionicResistance=0}={}){
+ const raw=whole(damage),type=String(damageType).toLowerCase(),hf=Math.min(20,whole(hailfire)+(type==="acid"&&targetIsConstruct?1:0)),multiplier=hf+1;
  const shields=whole(shield),armor=whole(shieldArmor),dr=whole(resistance),pen=whole(penetration),pp=whole(protection),health=whole(hp);
  const perShieldHit=Math.max(0,raw-armor);
  const shieldAbsorbed=Math.min(shields,perShieldHit*multiplier);
@@ -47,13 +47,14 @@ export function resolveAttackDamage({damage=0,penetration=0,rending=0,hailfire=0
    bodyMultiplier=1;
   }
  }
- const effectiveResistance=Math.max(0,dr-pen);
+ const bypass=type==="piercing"||type==="poison"||(type==="emp"&&targetIsConstruct)||(type==="energy"&&/^(light|none|no armor)$/i.test(String(targetArmorType).trim()));
+ const effectiveResistance=type==="psionic"?whole(psionicResistance):bypass?0:Math.max(0,dr-pen);
  const perHitAfterResistance=Math.max(0,spill-effectiveResistance);
  const postResistance=perHitAfterResistance*bodyMultiplier;
  const protectionAbsorbed=Math.min(pp,postResistance);
  const hpLost=Math.min(health,Math.max(0,postResistance-protectionAbsorbed));
  const adjustedThreshold=Math.max(1,whole(threshold,1)-whole(rending));
  const baseWounds=perHitAfterResistance>0?Math.floor(perHitAfterResistance/adjustedThreshold):0;
- const wounds=baseWounds>0?baseWounds*(bodyMultiplier===multiplier?multiplier:1):0;
+ const wounds=type==="poison"?0:baseWounds>0?baseWounds*(bodyMultiplier===multiplier?multiplier:1):0;
  return {raw,hailfire:hf,multiplier,shieldAbsorbed,shieldRemaining,spill,effectiveResistance,perHitAfterResistance,postResistance,protectionAbsorbed,protectionRemaining:pp-protectionAbsorbed,hpLost,hpRemaining:health-hpLost,adjustedThreshold,wounds};
 }

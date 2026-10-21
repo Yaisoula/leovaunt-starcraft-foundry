@@ -7,7 +7,7 @@ export function targetProfile(actor){
  const s=actor.system, npc=actor.type==="npc", wp=actorWoundPenalties(actor), stats=npc?{...s.defenses,defense:s.defenses.defense-wp.defense,damageResistance:Math.max(0,s.defenses.damageResistance-wp.damageResistance)}:calculateTerran(s,actor.items,woundState(actor).points).computed;
  return {actor,defense:stats.defense-chargeDefensePenalty(actor),damageResistance:npc?stats.damageResistance:stats.damageResistance,
  shieldArmor:npc?stats.shieldArmor:s.combat.shieldArmor,damageThreshold:stats.damageThreshold,
- shield:s.resources.shields.value,protection:s.resources.protection,hp:s.resources.hp.value};
+ targetIsConstruct:Boolean(s.isConstruct||s.construct),targetArmorType:npc?String(s.defenses?.armorType||""):String(actor.items.find(i=>i.type==="armor"&&i.system.equipped)?.system.armorType||""),psionicResistance:stats.psionicResistance??s.defenses?.psionicResistance??0,shield:s.resources.shields.value,protection:s.resources.protection,hp:s.resources.hp.value};
 }
 export function previewPhysicalDamage(profile,damage,traits){
  return resolvePhysicalDamage({damage,penetration:traits.penetration,rending:traits.rending,shield:profile.shield,shieldArmor:profile.shieldArmor,resistance:profile.damageResistance,protection:profile.protection,hp:profile.hp,threshold:profile.damageThreshold});

@@ -2,6 +2,8 @@ import {woundPenalties} from "./wounds.mjs";
 // Standard attack preview, Leovaunt Core Rulebook pp. 55, 100, 156.
 // Full-auto modes and damage from attack averages intentionally deferred.
 const n=value=>Number(value)||0;
+export const isJamEligible=(weapon,attack)=>Boolean(attack.requiresAmmo&&!attack.melee&&attack.tier<2&&!/protoss|energy weapon|laser|plasma/i.test(String(weapon.system.specialTraits||""))&&!/explosive|grenade/i.test(String(weapon.system.weaponClass||"")));
+export const naturalAttackTotal=(roll,accuracy)=>roll===20?30+accuracy:roll===1?-10+accuracy:roll+accuracy;
 export function weaponAttack(actorSystem,weapon,woundPoints={}){
  const wp=woundPenalties(woundPoints);
  const w=weapon.system,rate=String(w.rateOfFire||"Average").toLowerCase();
