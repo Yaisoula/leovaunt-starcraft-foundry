@@ -105,3 +105,13 @@
 .chat-message .sc-attack-details .sc-roll-card--damage .sc-roll-card-total{font-size:21px}
 .chat-message .sc-attack-details .sc-roll-card--crit{background:#183f2c;border-color:#36965a;color:#d5ffdf}
 .chat-message .sc-attack-details .sc-roll-card--miss{background:#51252a;border-color:#b6474c;color:#ffe1e1}
+
+/* Weapon jam notification below the damage total. */
+.chat-message .sc-attack-details .sc-roll-card--jam{
+ padding:4px 8px;margin:5px 0 8px;min-height:0;
+ background:#55262b;border-color:#c45c62;color:#ffe0e0;
+ font-size:12px;font-weight:900;letter-spacing:.05em;line-height:1.2;
+}
+.chat-message .sc-attack-details .sc-roll-card--miss .sc-roll-card-total{
+ font-size:22px;
+}
