@@ -115,3 +115,6 @@
 .chat-message .sc-attack-details .sc-roll-card--miss .sc-roll-card-total{
  font-size:22px;
 }
+
+/* Compact centered ammunition line in the public attack card. */
+.chat-message .sc-attack-details .sc-ammo-used{margin:7px 0 0;text-align:center;font-size:12px;font-weight:600}
