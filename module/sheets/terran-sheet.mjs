@@ -67,9 +67,13 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const jammed=natural1&&isJamEligible(item,a);
   if(jammed)await item.update({"system.jammed":true});
   const esc=foundry.utils.escapeHTML,traits=parsePhysicalTraits(item.system.specialTraits);
+  const dieResults=roll.dice?.[0]?.results?.map(d=>d.result)??[];
+  const shownDice=dieResults.length?dieResults.join(" / "):"—";
+  const shownTotal=roll.total;
+  const effectiveTotal=natural20?30+accuracy:natural1?-10+accuracy:shownTotal;
   const targets=profiles.length?profiles.map(p=>({name:p.actor.name,defense:Number(p.defense),profile:p})):[];
   const applications=[];
-  let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong><p>Accuracy: '+accuracy+' · Strikes: '+mode.strikes+' · Ammunition used: '+mode.ammo+'</p>';
+  let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong><p><strong>Attack Roll: '+esc(shownDice)+' + '+accuracy+' = '+shownTotal+'</strong>'+(effectiveTotal!==shownTotal?' · Rule-adjusted total: <strong>'+effectiveTotal+'</strong>':'')+'</p><p>Accuracy: '+accuracy+' · Strikes: '+mode.strikes+' · Ammunition used: '+mode.ammo+'</p>';
   if(mode.burst)breakdown+='<p>Burst ('+mode.burst+') · Hailfire ('+mode.hailfire+'). GM confirms which targets are in the area. No attack overage; missed area attacks deal half base damage unless protected by cover.</p>';
   else if(mode.hailfire)breakdown+='<p>Hailfire ('+mode.hailfire+'): post-resistance multiplier ×'+(mode.hailfire+1)+'.</p>';
   if(mode.suppress)breakdown+='<p><strong>Suppressing Fire:</strong> Cone ('+mode.cone+'), full-round action. GM tracks ongoing suppression, morale, Slowed, and triggered follow-up attacks.</p>';
