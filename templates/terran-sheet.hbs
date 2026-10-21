@@ -171,6 +171,14 @@
 .terran-hud .hud-combat-weapon .hud-attack-controls{margin-top:3px!important;margin-bottom:6px!important}
 .terran-hud .hud-wounds-panel{margin-bottom:5px!important}
 .terran-hud .hud-wounds-panel + .hud-tabs{margin-top:2px!important}
+.terran-hud .hud-equipment-card .hud-equipment-heading{min-height:42px!important;padding:3px 7px!important;gap:7px!important;align-items:center!important}
+.terran-hud .hud-equipment-card .hud-item-image{width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;padding:0!important}
+.terran-hud .hud-equipment-card .hud-item-image img{width:30px!important;height:30px!important;object-fit:cover}
+.terran-hud .hud-equipment-card .hud-equipment-more{min-height:30px!important;height:30px!important;padding:2px 7px!important}
+.terran-hud .hud-equipment-card .hud-item-quantity input{height:27px!important}
+.terran-hud .hud-combat-weapon .hud-attack-toggle input[type="checkbox"]{appearance:none!important;-webkit-appearance:none!important;background-color:#102633!important;border:1px solid #628599!important;box-shadow:none!important}
+.terran-hud .hud-combat-weapon .hud-attack-toggle input[type="checkbox"]:checked{appearance:none!important;-webkit-appearance:none!important;background:#53bce4!important;background-color:#53bce4!important;border-color:#9de9ff!important;box-shadow:inset 0 0 0 1px #53bce4!important}
+.terran-hud .hud-combat-weapon .hud-attack-toggle input[type="checkbox"]:checked::after{content:"✓"!important;display:block!important;color:#08232f!important;font-size:13px!important;font-weight:900!important;line-height:14px!important;text-align:center!important}
 </style>
 <header class="hud-header"><span>RAIDERS // PERSONNEL FILE</span><strong>TERRAN INTERFACE • ALPHA</strong></header>
 <div class="hud-identity hud-identity-simple hud-identity-telemetry"><img src="{{actor.img}}" alt="Portrait"/><div class="hud-identity-stats"><label>Character Name <input name="name" value="{{actor.name}}" placeholder="Enter character name"/></label><div class="hud-values"><div>Defense <b>{{derived.computed.defense}}</b></div><div>Toughness <b>{{derived.computed.toughness}}</b></div><div>Resolve <b>{{derived.computed.resolve}}</b></div><div>Damage Threshold <b>{{derived.computed.damageThreshold}}</b></div><div>Damage Resistance <b>{{derived.computed.damageResistance}}</b></div><div>Psionic Resistance <b>{{derived.computed.psionicResistance}}</b></div><div>Healing Threshold <b>{{derived.computed.healingThreshold}}</b></div><div>Move <b>{{derived.computed.moveSpeed}}</b></div><div>Shift <b>{{derived.computed.shiftSpeed}}</b></div><div>Initiative <b>{{derived.computed.initiative}}</b></div><div>Morale Bonus <b>{{derived.computed.moraleBonus}}</b></div></div></div></div>
