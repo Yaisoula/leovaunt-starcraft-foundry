@@ -38,7 +38,8 @@ export function resolveAttackDamage({damage=0,penetration=0,rending=0,hailfire=0
  const shieldRemaining=shields-shieldAbsorbed;
  let spill=raw;
  let bodyMultiplier=multiplier;
- if(shields>0&&perShieldHit>0){
+ if(shields>0&&perShieldHit===0){spill=0;bodyMultiplier=0;}
+ else if(shields>0&&perShieldHit>0){
   if(shieldRemaining>0 || perShieldHit*multiplier<=shields){spill=0;bodyMultiplier=0;}
   else {
    // After the shield is exhausted, only one identical hit reaches the body.
