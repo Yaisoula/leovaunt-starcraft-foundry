@@ -1,3 +1,4 @@
+import {applyWoundMorale} from "./morale.mjs";
 export const LOCATIONS=["mobility","action","core","vital","critical"];
 export const WOUND_RULES={
  mobility:{immediate:"Knocked prone (or loses flight control where applicable)",ongoing:"-1 speed, Athletics, Acrobatics, Stealth, Pilot per point; vehicle acceleration/max speed -10% per point"},
@@ -179,6 +180,7 @@ export async function resolveAttackWounds(actor,{count,individual=false,source="
   for(let i=0;i<amount;i++)groups.push(await recordWounds(actor,{count:1,source}));
  }else groups.push(await recordWounds(actor,{count:amount,source}));
  await actor.update({"system.resources.woundsPending":pending-amount});
+ await applyWoundMorale(actor);
  const summary=[];
  for(const result of groups){
   const immediate=await applyImmediateWoundEffect(actor,result.location,individual?1:amount);
