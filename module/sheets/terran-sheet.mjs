@@ -73,7 +73,20 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const effectiveTotal=natural20?30+accuracy:natural1?-10+accuracy:shownTotal;
   const targets=profiles.length?profiles.map(p=>({name:p.actor.name,defense:Number(p.defense),profile:p})):[];
   const applications=[];
-  let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong><div class="sc-attack-roll" style="position:relative;display:inline-block;margin:8px 0"><div class="sc-attack-roll-total" tabindex="0" title="Hover or focus for dice and modifiers" style="display:inline-block;min-width:90px;padding:8px 18px;text-align:center;border:1px solid #777;border-radius:5px;background:#242b32;color:#fff;font-size:22px;font-weight:800;cursor:help">'+effectiveTotal+'</div><div class="sc-attack-roll-tooltip" style="display:none;position:absolute;z-index:100;top:100%;left:0;min-width:210px;padding:9px 12px;border:1px solid #777;border-radius:5px;background:#182630;color:#fff;box-shadow:0 4px 12px #0008;white-space:nowrap"><strong>Attack Roll</strong><div>Dice: '+esc(shownDice)+'</div><div>Accuracy modifier: '+(accuracy>=0?'+':'')+accuracy+'</div><div>Rolled total: '+shownTotal+'</div>'+(effectiveTotal!==shownTotal?'<div>Natural roll adjustment: '+effectiveTotal+'</div>':'')+'</div></div><p>Accuracy: '+accuracy+' · Strikes: '+mode.strikes+' · Ammunition used: '+mode.ammo+'</p>';
+  const allMissed=natural1||(targets.length>0&&targets.every(t=>!resolveWeaponDamage(a,effectiveTotal,t.defense).hit));
+  const rollTone=allMissed?"miss":natural20?"crit":"normal";
+  const formatSigned=n=>n>=0?"+"+n:String(n);
+  const baseDisplayDamage=allMissed?0:targets.length?Math.max(0,...targets.map(t=>{
+   const result=resolveWeaponDamage(a,effectiveTotal,t.defense);
+   if(!result.hit)return mode.burst||mode.cone?Math.floor(a.damage/2):0;
+   return mode.burst||mode.cone?a.damage:result.damage;
+  })):a.damage;
+  const damageTone=allMissed?"miss":natural20?"crit":"normal";
+  const diceBreakdown=esc(shownDice)+" "+formatSigned(accuracy)+(effectiveTotal!==shownTotal?" · Rule-adjusted from "+shownTotal:"");
+  let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong>'+
+   '<div class="sc-roll-card sc-roll-card--'+rollTone+'"><div class="sc-roll-card-label">ATTACK</div><div class="sc-roll-card-total">'+effectiveTotal+'</div><div class="sc-roll-card-breakdown">d20: '+diceBreakdown+'</div></div>'+
+   '<div class="sc-roll-card sc-roll-card--damage sc-roll-card--'+damageTone+'"><div class="sc-roll-card-label">DAMAGE</div><div class="sc-roll-card-total">'+baseDisplayDamage+'</div><div class="sc-roll-card-breakdown">Pre-resistance'+(!targets.length?' · No target selected':targets.length>1?' · Highest target damage':'')+'</div></div>'+
+   '<p>Accuracy: '+accuracy+' · Strikes: '+mode.strikes+' · Ammunition used: '+mode.ammo+'</p>';
   if(mode.burst)breakdown+='<p>Burst ('+mode.burst+') · Hailfire ('+mode.hailfire+'). GM confirms which targets are in the area. No attack overage; missed area attacks deal half base damage unless protected by cover.</p>';
   else if(mode.hailfire)breakdown+='<p>Hailfire ('+mode.hailfire+'): post-resistance multiplier ×'+(mode.hailfire+1)+'.</p>';
   if(mode.suppress)breakdown+='<p><strong>Suppressing Fire:</strong> Cone ('+mode.cone+'), full-round action. GM tracks ongoing suppression, morale, Slowed, and triggered follow-up attacks.</p>';
