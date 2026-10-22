@@ -51,6 +51,7 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
   const updates={};
   const fields=this.document.type==="race"?root?.querySelectorAll("[data-race-field]"):root?.querySelectorAll(".hud-item-fields [name],.hud-race-name input[name]");
   for(const el of fields||[]){if(!el.name||el.disabled)continue;updates[el.name]=el.type==="number"?Number(el.value):el.type==="checkbox"?el.checked:el.value;}
+  const name=root?.querySelector(".hud-race-name input[name]");if(name)updates.name=name.value;
   if(Object.keys(updates).length)await this.document.update(updates);
  }
  static async changeRaceTab(event,target){
