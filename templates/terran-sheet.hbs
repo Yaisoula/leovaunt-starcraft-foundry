@@ -228,6 +228,18 @@
 .terran-hud .hud-race-portrait{width:64px;height:64px;object-fit:cover;border:1px solid #507281;border-radius:5px;flex:none}
 .terran-hud .hud-racial-feature{border:1px solid #507281;border-radius:5px;padding:10px;margin:8px 0}
 .terran-hud .hud-racial-feature strong{color:#87d9f3}
+.terran-hud .hud-origin-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.terran-hud .hud-origin-column{min-width:0}
+.terran-hud .hud-origin-column .hud-origin-drop{min-height:100px}
+.terran-hud .hud-combat-modifier-row{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:10px!important}
+.terran-hud .hud-combat-modifier-row label{min-width:0!important;width:100%!important}
+.terran-hud .hud-combat-modifier-row input{width:100%!important;box-sizing:border-box}
+.terran-hud .hud-equipment-card .hud-equipment-heading{padding:0 7px 0 0!important;min-height:42px!important;gap:9px!important}
+.terran-hud .hud-equipment-card .hud-item-image{align-self:stretch!important;width:44px!important;height:auto!important;min-width:44px!important;min-height:42px!important;border-radius:0!important;border-left:0!important;border-top:0!important;border-bottom:0!important;overflow:hidden!important}
+.terran-hud .hud-equipment-card .hud-item-image img{display:block!important;width:100%!important;height:100%!important;min-height:42px!important;object-fit:cover!important}
+.terran-hud .hud-equipment-card .hud-equip-toggle{display:flex!important;align-items:center!important;justify-content:center!important;margin:0!important;padding:0!important;align-self:center!important;flex:0 0 20px!important}
+.terran-hud .hud-equipment-card .hud-equip-toggle input{margin:0!important;vertical-align:middle!important}
+@media(max-width:650px){.terran-hud .hud-origin-columns{grid-template-columns:1fr}.terran-hud .hud-combat-modifier-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 </style>
 <header class="hud-header"><span>RAIDERS // PERSONNEL FILE</span><strong>TERRAN INTERFACE • ALPHA</strong></header>
 <div class="hud-identity hud-identity-simple hud-identity-telemetry"><img src="{{actor.img}}" alt="Portrait"/><div class="hud-identity-stats"><label>Character Name <input name="name" value="{{actor.name}}" placeholder="Enter character name"/></label><div class="hud-values"><div>Defense <b>{{derived.computed.defense}}</b></div><div>Toughness <b>{{derived.computed.toughness}}</b></div><div>Resolve <b>{{derived.computed.resolve}}</b></div><div>Damage Threshold <b>{{derived.computed.damageThreshold}}</b></div><div>Damage Resistance <b>{{derived.computed.damageResistance}}</b></div><div>Psionic Resistance <b>{{derived.computed.psionicResistance}}</b></div><div>Healing Threshold <b>{{derived.computed.healingThreshold}}</b></div><div>Move <b>{{derived.computed.moveSpeed}}</b></div><div>Shift <b>{{derived.computed.shiftSpeed}}</b></div><div>Initiative <b>{{derived.computed.initiative}}</b></div><div>Morale Bonus <b>{{derived.computed.moraleBonus}}</b></div></div></div></div>
@@ -248,7 +260,6 @@
 <section class="hud-panel"><div class="hud-skill-heading"><h3>PROWESS SKILLS</h3><span>Current Rank Maximum - {{derived.skillBaseMax}}</span></div><div class="hud-skill-column-labels hud-prowess-column-labels"><span>Skill</span><span>Ranks</span><span>Focus</span><span>Total</span></div>{{#each prowess}}<div class="hud-stat"><button type="button" class="hud-prowess-name hud-skill-roll-name" data-action="rollProwess" data-prowess="{{key}}">{{name}}</button><input class="hud-rank-input {{#if over}}hud-overcap-input{{/if}}" type="number" name="system.prowess.{{key}}.ranks" value="{{ranks}}" min="0" title="Maximum ranks: {{max}}"/><input type="number" name="system.prowess.{{key}}.focus" value="{{focus}}" min="0"/><b class="hud-prowess-total">{{total}}</b></div>{{/each}}</section></div>
 
 {{else if (eq tab "combat")}}
-<section class="hud-panel"><h3>COMBAT MODIFIERS</h3><div class="hud-mods"><label>Protection Points <input type="number" min="0" name="system.resources.protection" value="{{s.resources.protection}}"/></label></div><div class="hud-mods"><label>Armor DR <input type="number" name="system.combat.armorResistance" value="{{s.combat.armorResistance}}"/></label><label>Armor Defense <input type="number" name="system.combat.armorDefensePenalty" value="{{s.combat.armorDefensePenalty}}"/></label><label>Psi Level <input type="number" name="system.combat.psiLevel" value="{{s.combat.psiLevel}}"/></label><label>Bonus HP <input type="number" name="system.combat.bonusHP" value="{{s.combat.bonusHP}}"/></label></div><p class="hud-help">Equipped armor contributes {{derived.equipment.armorResistance}} armor DR and {{derived.equipment.armorDefensePenalty}} to Defense. Armor DR/Defense fields above are additional manual modifiers. Weapon attacks and wound automation are still planned.</p></section>
 <section class="hud-panel"><h3>SPECIAL COMBAT ACTIONS</h3><div class="hud-special-actions"><button type="button" data-action="grabTarget">Grab</button><button type="button" data-action="knockDownTarget">Knock Down</button><button type="button" data-action="pushTarget">Push</button><button type="button" data-action="disarmWeapon">Disarm</button></div></section>
 <section class="hud-panel"><h3>EQUIPPED WEAPONS</h3>
 {{#each combatWeapons}}
@@ -256,10 +267,11 @@
 <div class="hud-attack-controls"><label class="hud-firing-select">Firing Mode <select data-firing-mode>{{#each modes}}<option value="{{id}}">{{label}} ({{ammo}} ammo)</option>{{/each}}</select></label><label class="hud-attack-toggle" title="Charge: full-round action, +5 Accuracy and +10 melee damage; GM handles movement and defense restrictions."><input type="checkbox" data-charge/><span>Charge</span></label><label class="hud-attack-toggle" title="Action Move: full-round action, −2 Accuracy; GM handles movement."><input type="checkbox" data-action-move/><span>Action Move</span></label></div></div>
 
 </div>{{else}}<p class="hud-help">Equip a weapon in Inventory to use it here.</p>{{/each}}</section>
+<section class="hud-panel hud-custom-combat-modifiers"><h3>CUSTOM COMBAT MODIFIERS</h3><div class="hud-mods hud-combat-modifier-row"><label>Protection Points <input type="number" min="0" name="system.resources.protection" value="{{s.resources.protection}}"/></label><label>Armor DR <input type="number" name="system.combat.armorResistance" value="{{s.combat.armorResistance}}"/></label><label>Armor Defense <input type="number" name="system.combat.armorDefensePenalty" value="{{s.combat.armorDefensePenalty}}"/></label><label>Psi Level <input type="number" name="system.combat.psiLevel" value="{{s.combat.psiLevel}}"/></label><label>Bonus HP <input type="number" name="system.combat.bonusHP" value="{{s.combat.bonusHP}}"/></label></div></section>
 {{else if (eq tab "inventory")}}
 <section class="hud-panel hud-credits-panel"><label><strong>Credits</strong> <input type="number" min="0" step="1" name="system.resources.credits" value="{{s.resources.credits}}" aria-label="Character credits"/></label></section>
 <section class="hud-panel hud-inventory-sections">
-<section class="hud-inventory-category"><div class="hud-inventory-heading"><h4>Weapons</h4><button type="button" data-action="createEquipment" data-item-type="weapon">+ Weapon</button></div>{{#each inventoryWeapons}}
+<section class="hud-inventory-category"><div class="hud-inventory-heading"><h4>Weapons</h4><button type="button" data-action="createEquipment" data-item-type="weapon" title="Add weapon" aria-label="Add weapon">+</button></div>{{#each inventoryWeapons}}
 <div class="hud-equipment-card" data-equipment-id="{{id}}">
 <div class="hud-equipment-heading">
 <button type="button" class="hud-item-image" data-action="chooseItemImage" data-item-id="{{id}}" title="Choose item picture"><img src="{{img}}" alt="Image for {{name}}"/></button><label class="hud-equip-toggle" title="Equipped"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></label>
@@ -334,7 +346,7 @@
 <label class="hud-wide">Notes<input data-item-field="notes" value="{{notes}}"/></label>
 </fieldset>{{/if}}</div>
 {{else}}<p class="hud-help">No armor yet.</p>{{/each}}</section>
-<section class="hud-inventory-category"><div class="hud-inventory-heading"><h4>Gear</h4><button type="button" data-action="createEquipment" data-item-type="gear">+ Gear</button></div>{{#each inventoryGear}}
+<section class="hud-inventory-category"><div class="hud-inventory-heading"><h4>Gear</h4><button type="button" data-action="createEquipment" data-item-type="gear" title="Add gear" aria-label="Add gear">+</button></div>{{#each inventoryGear}}
 <div class="hud-equipment-card" data-equipment-id="{{id}}">
 <div class="hud-equipment-heading">
 <button type="button" class="hud-item-image" data-action="chooseItemImage" data-item-id="{{id}}" title="Choose item picture"><img src="{{img}}" alt="Image for {{name}}"/></button><label class="hud-equip-toggle" title="Equipped"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></label>
@@ -393,15 +405,15 @@
 {{else}}
 <div class="hud-power-stats"><div>Heroic Level <b>{{selectedPower.name}}</b></div><div>Starting Characteristic Points <b>{{selectedPower.starting}}</b></div><div>Characteristic Points / Level <b>{{selectedPower.perLevel}}</b></div></div>
 {{/if}}
-<h3>RACE</h3>
+<div class="hud-origin-columns"><div class="hud-origin-column"><h3>RACE</h3>
 <div class="hud-origin-drop {{#if originRaces}}hud-origin-assigned{{/if}}" data-origin-drop="race" aria-label="Drop race item here">
 {{#each originRaces}}<div class="hud-origin-entry hud-race-entry" data-origin-context data-item-id="{{id}}" title="Right-click to edit or remove"><img class="hud-race-portrait" src="{{img}}" alt="{{name}}"/><strong>{{name}}</strong></div>{{else}}<p>Drag a race item from the Items directory here.</p>{{/each}}
 </div>
-<h3>BACKGROUND</h3>
+</div><div class="hud-origin-column"><h3>BACKGROUND</h3>
 <div class="hud-origin-drop" data-origin-drop="background" aria-label="Drop background item here">
 {{#each originBackgrounds}}<div class="hud-origin-entry"><span><strong>{{name}}</strong> <small>({{cost}} CP)</small></span><span><button type="button" data-action="openOrigin" data-item-id="{{id}}" title="Open item">Edit</button><button type="button" data-action="removeOrigin" data-item-id="{{id}}" title="Remove from character">Remove</button></span></div>{{else}}<p>Drag a background item from the Items directory here.</p>{{/each}}
-</div>
-<p class="hud-help">GMs create Race, Background, and Specialization items in the Items directory. Drag Race and Background here, and choose your first Specialization in the Talents tab. Characteristic Point costs and benefits are applied manually.</p>
+</div></div></div>
+<p class="hud-help">GMs create Race, Background, and Specialization items in the Items directory. Drag Race and Background here, and choose your first Specialization in the Features tab. Race CP costs and attribute bonuses are handled automatically.</p>
 </section>
 {{else if (eq tab "psionics")}}
 <section class="hud-panel"><h3>PSIONIC RECORDS</h3><div class="hud-mods"><label>Psi Level <input type="number" name="system.combat.psiLevel" value="{{s.combat.psiLevel}}"/></label></div><p class="hud-help">Psionic powers and disciplines are planned for a later milestone.</p></section>
