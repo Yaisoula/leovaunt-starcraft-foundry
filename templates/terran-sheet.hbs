@@ -214,6 +214,10 @@
 .terran-hud .hud-progression-fields .hud-xp-line{display:inline-flex!important;align-items:center!important;gap:5px!important;width:auto!important;flex:0 0 auto!important}
 .terran-hud .hud-progression-fields .hud-xp-line input{width:85px!important;min-width:0!important}
 .terran-hud .hud-progression-fields .hud-level-up-inline{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 26px!important;width:26px!important;min-width:26px!important;height:26px!important;padding:0!important;font-size:19px!important}
+.terran-hud .hud-race-choice{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin:10px 0}
+.terran-hud .hud-race-choice label{display:flex;flex-direction:column;gap:4px;min-width:210px;max-width:320px;flex:1 1 210px}
+.terran-hud .hud-race-choice select{width:100%;min-width:0}
+.terran-hud .hud-race-choice button{min-width:160px;padding:6px 12px;white-space:nowrap}
 </style>
 <header class="hud-header"><span>RAIDERS // PERSONNEL FILE</span><strong>TERRAN INTERFACE • ALPHA</strong></header>
 <div class="hud-identity hud-identity-simple hud-identity-telemetry"><img src="{{actor.img}}" alt="Portrait"/><div class="hud-identity-stats"><label>Character Name <input name="name" value="{{actor.name}}" placeholder="Enter character name"/></label><div class="hud-values"><div>Defense <b>{{derived.computed.defense}}</b></div><div>Toughness <b>{{derived.computed.toughness}}</b></div><div>Resolve <b>{{derived.computed.resolve}}</b></div><div>Damage Threshold <b>{{derived.computed.damageThreshold}}</b></div><div>Damage Resistance <b>{{derived.computed.damageResistance}}</b></div><div>Psionic Resistance <b>{{derived.computed.psionicResistance}}</b></div><div>Healing Threshold <b>{{derived.computed.healingThreshold}}</b></div><div>Move <b>{{derived.computed.moveSpeed}}</b></div><div>Shift <b>{{derived.computed.shiftSpeed}}</b></div><div>Initiative <b>{{derived.computed.initiative}}</b></div><div>Morale Bonus <b>{{derived.computed.moraleBonus}}</b></div></div></div></div>
@@ -368,6 +372,17 @@
 <p class="hud-help">This is a one-time choice. Confirming locks the power level and grants the starting characteristic points.</p>
 {{else}}
 <div class="hud-power-stats"><div>Heroic Level <b>{{selectedPower.name}}</b></div><div>Starting Characteristic Points <b>{{selectedPower.starting}}</b></div><div>Characteristic Points / Level <b>{{selectedPower.perLevel}}</b></div></div>
+{{/if}}
+<h3>RACE</h3>
+{{#if raceUnconfirmed}}
+{{#if powerLevelUnconfirmed}}
+<p class="hud-help">Confirm Heroic Level before selecting a race.</p>
+{{else}}
+<div class="hud-race-choice"><label>Race <select data-race-choice><option value="terran">Terran — 4 CP</option><option value="wrangler">Psionic Terran: Psychic Wrangler — 6 CP</option><option value="basic">Psionic Terran: Basic Telepath — 10 CP</option><option value="advanced">Psionic Terran: Advanced Telepath — 13 CP</option><option value="telekinetic">Psionic Terran: Telekinetic — 16 CP</option></select></label><label>Starting Skill Focus <select data-race-focus>{{#each raceFocusOptions}}<option value="{{key}}">{{name}}</option>{{/each}}</select></label><button type="button" data-action="confirmRace">Confirm Race</button></div>
+<p class="hud-help">Confirming spends the race's Characteristic Points, grants +2 to all six base ability scores, and sets a permanent starting Skill Focus. Psionic Terrans also receive their starting Psi Level. Race choices cannot be changed afterward.</p>
+{{/if}}
+{{else}}
+<div class="hud-power-stats"><div>Race <b>{{raceName}}</b></div><div>Starting Skill Focus <b>{{raceFocusName}}</b></div></div>
 {{/if}}
 </section>
 {{else if (eq tab "psionics")}}

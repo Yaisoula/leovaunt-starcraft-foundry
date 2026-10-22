@@ -32,5 +32,5 @@ Hooks.on("updateActiveEffect",syncProneFromEffect);
 // New Terran characters choose a power level once; existing characters remain locked as-is.
 Hooks.on("preCreateActor",(actor)=>{
  if(actor.type!=="terran")return;
- actor.updateSource({"flags.leovaunt-starcraft.powerLevelConfirmed":false});
+ actor.updateSource({"flags.leovaunt-starcraft.powerLevelConfirmed":false,"flags.leovaunt-starcraft.raceConfirmed":false});
 });
