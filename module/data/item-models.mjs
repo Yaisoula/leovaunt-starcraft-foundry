@@ -5,7 +5,7 @@ export class StarcraftItemDataModel extends foundry.abstract.TypeDataModel{
  static defineSchema(){return {
  description:new f.HTMLField({required:true,initial:""}),
  quantity:number(1,0),weight:number(0,0),cost:number(0,0),tier:number(1,1),
- equipped:new f.BooleanField({initial:false}),notes:string(),
+ equipped:new f.BooleanField({initial:false}),notes:string(),raceSize:string("medium"),raceAttributes:new f.SchemaField(Object.fromEntries(["strength","instinct","agility","fortitude","intelligence","willpower"].map(k=>[k,number(0)]))),raceFeatures:new f.ArrayField(new f.SchemaField({name:string(),description:string()}),{initial:[]}),
  // Weapon statistics, per Leovaunt Core Rulebook, Weapons chapter.
  weaponClass:string(),hands:number(2,1),damage:number(),accuracy:number(),rateOfFire:string("Average"),
  range:string("Medium"),shots:number(0,0),currentShots:number(0,0),ammunition:string(),
