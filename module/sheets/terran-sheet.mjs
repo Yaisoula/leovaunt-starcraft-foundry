@@ -33,7 +33,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   let item;try{item=await Item.implementation.fromDropData(data);}catch(e){ui.notifications.warn("Could not load dragged item.");return;}
   const kind=zone.dataset.originDrop;
   if(item?.type!==kind){ui.notifications.warn("Drop a "+kind+" item here.");return;}
-  if(kind!=="specialization"&&this.document.items.some(i=>i.type===kind)){ui.notifications.warn("Remove the existing "+kind+" before adding another.");return;}
+  if(this.document.items.some(i=>i.type===kind)){ui.notifications.warn("This character already has a "+kind+". Remove it before selecting another.");return;}
   if(this.document.items.some(i=>i.uuid===item.uuid||i.getFlag("leovaunt-starcraft","sourceUuid")===item.uuid)){ui.notifications.warn("That choice is already on the character.");return;}
   const source=item.toObject();delete source._id;source.flags??={};source.flags["leovaunt-starcraft"]={...(source.flags["leovaunt-starcraft"]||{}),sourceUuid:item.uuid};
   await this.document.createEmbeddedDocuments("Item",[source]);
