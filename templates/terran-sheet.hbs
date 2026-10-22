@@ -224,6 +224,10 @@
 .terran-hud .hud-origin-entry{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0}
 .terran-hud .hud-origin-entry button{width:auto;min-width:65px;margin-left:5px;padding:5px 8px}
 .terran-hud .hud-bio-size{display:flex;flex-direction:column;gap:4px;max-width:260px;margin:10px 0}
+.terran-hud .hud-race-entry{justify-content:flex-start;gap:12px;cursor:context-menu}
+.terran-hud .hud-race-portrait{width:64px;height:64px;object-fit:cover;border:1px solid #507281;border-radius:5px;flex:none}
+.terran-hud .hud-racial-feature{border:1px solid #507281;border-radius:5px;padding:10px;margin:8px 0}
+.terran-hud .hud-racial-feature strong{color:#87d9f3}
 </style>
 <header class="hud-header"><span>RAIDERS // PERSONNEL FILE</span><strong>TERRAN INTERFACE • ALPHA</strong></header>
 <div class="hud-identity hud-identity-simple hud-identity-telemetry"><img src="{{actor.img}}" alt="Portrait"/><div class="hud-identity-stats"><label>Character Name <input name="name" value="{{actor.name}}" placeholder="Enter character name"/></label><div class="hud-values"><div>Defense <b>{{derived.computed.defense}}</b></div><div>Toughness <b>{{derived.computed.toughness}}</b></div><div>Resolve <b>{{derived.computed.resolve}}</b></div><div>Damage Threshold <b>{{derived.computed.damageThreshold}}</b></div><div>Damage Resistance <b>{{derived.computed.damageResistance}}</b></div><div>Psionic Resistance <b>{{derived.computed.psionicResistance}}</b></div><div>Healing Threshold <b>{{derived.computed.healingThreshold}}</b></div><div>Move <b>{{derived.computed.moveSpeed}}</b></div><div>Shift <b>{{derived.computed.shiftSpeed}}</b></div><div>Initiative <b>{{derived.computed.initiative}}</b></div><div>Morale Bonus <b>{{derived.computed.moraleBonus}}</b></div></div></div></div>
@@ -369,7 +373,7 @@
 </fieldset>{{/if}}</div>
 {{else}}<p class="hud-help">No gear yet.</p>{{/each}}</section></section>
 {{else if (eq tab "talents")}}
-<section class="hud-panel"><h3>TALENTS &amp; SPECIALIZATIONS</h3>
+<section class="hud-panel"><h3>FEATURES &amp; SPECIALIZATIONS</h3><h3>RACIAL FEATURES</h3>{{#each racialFeatures}}<div class="hud-racial-feature"><strong>{{name}}</strong><div>{{{description}}}</div></div>{{else}}<p class="hud-help">Select a race to display its racial features.</p>{{/each}}
 <h3>SPECIALIZATIONS</h3>
 {{#if originSpecializations}}
 <div class="hud-origin-drop hud-origin-assigned" aria-label="Selected specialization">
@@ -390,8 +394,8 @@
 <div class="hud-power-stats"><div>Heroic Level <b>{{selectedPower.name}}</b></div><div>Starting Characteristic Points <b>{{selectedPower.starting}}</b></div><div>Characteristic Points / Level <b>{{selectedPower.perLevel}}</b></div></div>
 {{/if}}
 <h3>RACE</h3>
-<div class="hud-origin-drop" data-origin-drop="race" aria-label="Drop race item here">
-{{#each originRaces}}<div class="hud-origin-entry"><span><strong>{{name}}</strong> <small>({{cost}} CP)</small></span><span><button type="button" data-action="openOrigin" data-item-id="{{id}}" title="Open item">Edit</button><button type="button" data-action="removeOrigin" data-item-id="{{id}}" title="Remove from character">Remove</button></span></div>{{else}}<p>Drag a race item from the Items directory here.</p>{{/each}}
+<div class="hud-origin-drop {{#if originRaces}}hud-origin-assigned{{/if}}" data-origin-drop="race" aria-label="Drop race item here">
+{{#each originRaces}}<div class="hud-origin-entry hud-race-entry" data-origin-context data-item-id="{{id}}" title="Right-click to edit or remove"><img class="hud-race-portrait" src="{{img}}" alt="{{name}}"/><strong>{{name}}</strong></div>{{else}}<p>Drag a race item from the Items directory here.</p>{{/each}}
 </div>
 <h3>BACKGROUND</h3>
 <div class="hud-origin-drop" data-origin-drop="background" aria-label="Drop background item here">
