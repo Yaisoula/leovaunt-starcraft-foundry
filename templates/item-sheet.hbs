@@ -54,7 +54,11 @@
 
 .sc-item-editor .hud-header{display:flex;align-items:center;gap:12px;min-height:42px}
 .sc-item-editor .hud-race-editor-toggle{margin-left:auto!important;min-width:125px!important;width:125px!important;flex:0 0 125px;white-space:nowrap}
-.sc-item-editor .hud-race-identity{display:flex;align-items:center;gap:18px;padding:14px 12px;min-height:112px}
+.sc-item-editor .hud-race-identity{display:flex;align-items:stretch;gap:18px;padding:14px 12px;min-height:0}
+.sc-item-editor .hud-race-identity>button{align-self:stretch!important;aspect-ratio:1/1!important;height:auto!important;width:72px!important;min-width:72px!important;min-height:72px!important;flex:0 0 72px!important}
+.sc-item-editor .hud-race-identity>.hud-race-name{display:flex;align-items:center;min-height:72px}
+.sc-item-editor .hud-race-identity>.hud-race-name input{height:72px!important;min-height:72px!important;box-sizing:border-box}
+.sc-item-editor .hud-race-identity>.hud-race-name strong{display:flex;align-items:center;min-height:72px;box-sizing:border-box;width:100%;padding:0 8px}
 .sc-item-editor .hud-race-identity>button{display:block;flex:0 0 88px;width:88px;height:88px;min-width:88px;min-height:88px;padding:0;overflow:hidden;border-radius:5px}
 .sc-item-editor .hud-race-identity>button img{display:block;width:100%;height:100%;object-fit:cover;aspect-ratio:1/1}
 .sc-item-editor .hud-race-name{flex:1;min-width:0}

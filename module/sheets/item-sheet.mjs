@@ -5,6 +5,38 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
  _raceEditor=false;
  _descriptionEditing=false;
  _featureEditing=new Set();
+ _raceScrollPositions=new Map();
+ _captureRaceScroll(){
+  if(this.document.type!=="race")return;
+  const root=this.element;if(!root)return;
+  const nodes=[root,...root.querySelectorAll("*")].filter(el=>el.scrollHeight>el.clientHeight+1&&el.clientHeight>0);
+  for(const el of nodes){
+   const key=el===root?"root":this._raceScrollKey(el);
+   if(key)this._raceScrollPositions.set(key,{top:el.scrollTop,left:el.scrollLeft});
+  }
+ }
+ _raceScrollKey(el){
+  if(el.classList.contains("hud-tab-content"))return "tab-content";
+  if(el.classList.contains("window-content"))return "window-content";
+  if(el.classList.contains("hud-shell"))return "hud-shell";
+  const classes=["hud-race-description","hud-race-features","hud-race-prose"];
+  return classes.find(k=>el.classList.contains(k))||null;
+ }
+ async _onRender(context,options){
+  await super._onRender(context,options);
+  if(this.document.type!=="race")return;
+  const root=this.element;if(!root)return;
+  const nodes=[root,...root.querySelectorAll("*")];
+  for(const el of nodes){
+   const key=el===root?"root":this._raceScrollKey(el);
+   const position=key&&this._raceScrollPositions.get(key);
+   if(position){el.scrollTop=position.top;el.scrollLeft=position.left;}
+  }
+ }
+ async render(options={},...args){
+  if(this.document.type==="race")this._captureRaceScroll();
+  return super.render(options,...args);
+ }
  async _prepareContext(options){
   const context=await super._prepareContext(options),race=this.document.type==="race";
   const features=Array.from(this.document.system.raceFeatures||[],(f,i)=>({index:i,name:f.name,description:f.description,editing:this._raceEditor&&this._featureEditing.has(i)}));
