@@ -240,6 +240,20 @@
 .terran-hud .hud-equipment-card .hud-equip-toggle{display:flex!important;align-items:center!important;justify-content:center!important;margin:0!important;padding:0!important;align-self:center!important;flex:0 0 20px!important}
 .terran-hud .hud-equipment-card .hud-equip-toggle input{margin:0!important;vertical-align:middle!important}
 @media(max-width:650px){.terran-hud .hud-origin-columns{grid-template-columns:1fr}.terran-hud .hud-combat-modifier-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+.terran-hud .hud-equipment-card{overflow:hidden!important}
+.terran-hud .hud-equipment-card .hud-equipment-heading{margin-left:-1px!important;padding-left:0!important}
+.terran-hud .hud-equipment-card .hud-item-image{margin-left:-1px!important;align-self:stretch!important;flex:0 0 44px!important}
+.terran-hud .hud-origin-column .hud-origin-drop{min-height:48px!important;padding:5px 8px!important;margin:5px 0 9px!important}
+.terran-hud .hud-origin-column .hud-race-entry{min-height:38px!important;padding:0!important;flex-wrap:wrap}
+.terran-hud .hud-origin-column .hud-race-portrait{width:38px!important;height:38px!important;object-fit:cover!important}
+.terran-hud .hud-origin-inline-menu{display:flex;flex:1 0 100%;gap:7px;padding:5px 0 2px}
+.terran-hud .hud-origin-inline-menu[hidden]{display:none!important}
+.terran-hud .hud-origin-inline-menu button{flex:1;min-width:0!important;margin:0!important}
+.terran-hud .hud-progression-power-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:stretch}
+.terran-hud .hud-progression-power-grid>.hud-panel{min-width:0;margin:0!important}
+.terran-hud .hud-progression-power-grid .hud-power-stats{display:grid!important;grid-template-columns:1fr!important;gap:5px!important}
+.terran-hud .hud-progression-power-grid .hud-progression-fields{max-width:none!important}
+@media(max-width:700px){.terran-hud .hud-progression-power-grid{grid-template-columns:1fr}}
 </style>
 <header class="hud-header"><span>RAIDERS // PERSONNEL FILE</span><strong>TERRAN INTERFACE • ALPHA</strong></header>
 <div class="hud-identity hud-identity-simple hud-identity-telemetry"><img src="{{actor.img}}" alt="Portrait"/><div class="hud-identity-stats"><label>Character Name <input name="name" value="{{actor.name}}" placeholder="Enter character name"/></label><div class="hud-values"><div>Defense <b>{{derived.computed.defense}}</b></div><div>Toughness <b>{{derived.computed.toughness}}</b></div><div>Resolve <b>{{derived.computed.resolve}}</b></div><div>Damage Threshold <b>{{derived.computed.damageThreshold}}</b></div><div>Damage Resistance <b>{{derived.computed.damageResistance}}</b></div><div>Psionic Resistance <b>{{derived.computed.psionicResistance}}</b></div><div>Healing Threshold <b>{{derived.computed.healingThreshold}}</b></div><div>Move <b>{{derived.computed.moveSpeed}}</b></div><div>Shift <b>{{derived.computed.shiftSpeed}}</b></div><div>Initiative <b>{{derived.computed.initiative}}</b></div><div>Morale Bonus <b>{{derived.computed.moraleBonus}}</b></div></div></div></div>
@@ -308,7 +322,7 @@
 <label class="hud-wide">Notes<input data-item-field="notes" value="{{notes}}"/></label>
 </fieldset>{{/if}}</div>
 {{else}}<p class="hud-help">No weapons yet.</p>{{/each}}</section>
-<section class="hud-inventory-category"><div class="hud-inventory-heading"><h4>Armor</h4><button type="button" data-action="createEquipment" data-item-type="armor">+ Armo</button></div>{{#each inventoryArmor}}
+<section class="hud-inventory-category"><div class="hud-inventory-heading"><h4>Armor</h4><button type="button" data-action="createEquipment" data-item-type="armor" title="Add armor" aria-label="Add armor">+</button></div>{{#each inventoryArmor}}
 <div class="hud-equipment-card" data-equipment-id="{{id}}">
 <div class="hud-equipment-heading">
 <button type="button" class="hud-item-image" data-action="chooseItemImage" data-item-id="{{id}}" title="Choose item picture"><img src="{{img}}" alt="Image for {{name}}"/></button><label class="hud-equip-toggle" title="Equipped"><input type="checkbox" data-action="toggleEquipped" data-item-id="{{id}}" {{#if equipped}}checked{{/if}}/></label>
@@ -397,21 +411,21 @@
 <p class="hud-help">The first specialization is selected during character creation. Additional specializations will be handled separately as characters advance.</p>
 <h3>TALENTS</h3><p class="hud-help">Talent management is planned for a later milestone.</p></section>
 {{else if (eq tab "progression")}}
-<section class="hud-panel"><h3>CHARACTER PROGRESSION</h3><div class="hud-mods hud-progression-fields"><label>Level <input type="number" name="system.level" value="{{s.level}}" min="1"/></label><label>Experience <span class="hud-xp-line"><input type="number" name="system.experience" value="{{s.experience}}" min="0"/> <strong>/ {{derived.xpPerLevel}}</strong>{{#if canLevelUp}}<button type="button" data-action="levelUp" class="hud-level-up-alert hud-level-up-inline" title="Level up available — 500 XP reached" aria-label="Level up available">!</button>{{/if}}</span></label><label><span class="hud-cp-label" tabindex="0">Characteristic Points<span class="hud-cp-tooltip">Increase ability score by 1: 3 points<br>Purchase a talent: 2 points<br>Purchase a skill package: 1 point</span></span> <input type="number" name="system.resources.characteristicPoints" value="{{s.resources.characteristicPoints}}"/></label></div>
+<div class="hud-progression-power-grid"><section class="hud-panel"><h3>CHARACTER PROGRESSION</h3><div class="hud-mods hud-progression-fields"><label>Level <input type="number" name="system.level" value="{{s.level}}" min="1"/></label><label>Experience <span class="hud-xp-line"><input type="number" name="system.experience" value="{{s.experience}}" min="0"/> <strong>/ {{derived.xpPerLevel}}</strong>{{#if canLevelUp}}<button type="button" data-action="levelUp" class="hud-level-up-alert hud-level-up-inline" title="Level up available — 500 XP reached" aria-label="Level up available">!</button>{{/if}}</span></label><label><span class="hud-cp-label" tabindex="0">Characteristic Points<span class="hud-cp-tooltip">Increase ability score by 1: 3 points<br>Purchase a talent: 2 points<br>Purchase a skill package: 1 point</span></span> <input type="number" name="system.resources.characteristicPoints" value="{{s.resources.characteristicPoints}}"/></label></div>
 <h3>CHARACTER POWER LEVEL</h3>
 {{#if powerLevelUnconfirmed}}
 <div class="hud-power-confirm-row"><label class="hud-power-select">Choose Heroic Level <select data-initial-power-level>{{#each powerLevels}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}} — {{starting}} points</option>{{/each}}</select></label><button type="button" data-action="confirmPowerLevel" class="hud-power-confirm-button">Confirm Heroic Level</button></div>
 <p class="hud-help">This is a one-time choice. Confirming locks the power level and grants the starting characteristic points.</p>
 {{else}}
 <div class="hud-power-stats"><div>Heroic Level <b>{{selectedPower.name}}</b></div><div>Starting Characteristic Points <b>{{selectedPower.starting}}</b></div><div>Characteristic Points / Level <b>{{selectedPower.perLevel}}</b></div></div>
-{{/if}}
+{{/if}}</section></div>
 <div class="hud-origin-columns"><div class="hud-origin-column"><h3>RACE</h3>
 <div class="hud-origin-drop {{#if originRaces}}hud-origin-assigned{{/if}}" data-origin-drop="race" aria-label="Drop race item here">
-{{#each originRaces}}<div class="hud-origin-entry hud-race-entry" data-origin-context data-item-id="{{id}}" title="Right-click to edit or remove"><img class="hud-race-portrait" src="{{img}}" alt="{{name}}"/><strong>{{name}}</strong></div>{{else}}<p>Drag a race item from the Items directory here.</p>{{/each}}
+{{#each originRaces}}<div class="hud-origin-entry hud-race-entry" data-origin-context data-item-id="{{id}}" title="Right-click for options"><img class="hud-race-portrait" src="{{img}}" alt="{{name}}"/><strong>{{name}}</strong><div class="hud-origin-inline-menu" hidden><button type="button" data-action="openOrigin" data-item-id="{{id}}">Edit</button><button type="button" data-action="removeOrigin" data-item-id="{{id}}">Delete</button></div></div>{{else}}<p>Drag a race item from the Items directory here.</p>{{/each}}
 </div>
 </div><div class="hud-origin-column"><h3>BACKGROUND</h3>
-<div class="hud-origin-drop" data-origin-drop="background" aria-label="Drop background item here">
-{{#each originBackgrounds}}<div class="hud-origin-entry"><span><strong>{{name}}</strong> <small>({{cost}} CP)</small></span><span><button type="button" data-action="openOrigin" data-item-id="{{id}}" title="Open item">Edit</button><button type="button" data-action="removeOrigin" data-item-id="{{id}}" title="Remove from character">Remove</button></span></div>{{else}}<p>Drag a background item from the Items directory here.</p>{{/each}}
+<div class="hud-origin-drop {{#if originBackgrounds}}hud-origin-assigned{{/if}}" data-origin-drop="background" aria-label="Drop background item here">
+{{#each originBackgrounds}}<div class="hud-origin-entry hud-race-entry" data-origin-context data-item-id="{{id}}" title="Right-click for options"><strong>{{name}}</strong><div class="hud-origin-inline-menu" hidden><button type="button" data-action="openOrigin" data-item-id="{{id}}">Edit</button><button type="button" data-action="removeOrigin" data-item-id="{{id}}">Delete</button></div></div>{{else}}<p>Drag a background item from the Items directory here.</p>{{/each}}
 </div></div></div>
 <p class="hud-help">GMs create Race, Background, and Specialization items in the Items directory. Drag Race and Background here, and choose your first Specialization in the Features tab. Race CP costs and attribute bonuses are handled automatically.</p>
 </section>
