@@ -41,6 +41,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   if(kind==="race"){
    const updates={};
    for(const key of Object.keys(ATTRIBUTE_LABELS)){const bonus=Number(item.system.raceAttributes?.[key])||0;if(bonus)updates["system.attributes."+key+".base"]=(Number(this.document.system.attributes[key].base)||0)+bonus;}
+   updates["system.combat.psiLevel"]=Number(item.system.racePsiLevel)||0;
    const size=item.system.raceSize||"medium";updates["system.size"]=size;
    updates["prototypeToken.width"]=this.constructor.tokenDimensions(size).width;updates["prototypeToken.height"]=this.constructor.tokenDimensions(size).height;
    await this.document.update(updates);
