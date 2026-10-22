@@ -86,7 +86,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const profiles=selected.map(token=>targetProfile(token.actor)).filter(Boolean);
   if(selected.length!==profiles.length){ui.notifications.warn("Some targets cannot be resolved automatically.");return;}
   if(!mode.burst&&!mode.cone&&selected.length>1){ui.notifications.warn("This firing mode targets one creature. Select one target.");return;}
-  const chosenRollMode=await this.chooseRollMode();
+  const chosenRollMode=await this.constructor.chooseRollMode();
   if(!chosenRollMode)return;
   const charge=mode.id==="normal"&&container?.querySelector("[data-charge]")?.checked===true;
   const actionMove=!charge&&container?.querySelector("[data-action-move]")?.checked===true;
@@ -229,15 +229,15 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
  }
  static async onFormSubmit(event,form,formData){await this.document.update(formData.object);}
  static async chooseRollMode(){
-  return foundry.applications.api.DialogV2.wait({window:{title:"Roll Type"},content:"<p>How would you like to roll?</p>",buttons:[{action:"advantage",label:"Advantage",icon:"fas fa-arrow-up"},{action:"normal",label:"Normal",default:true,icon:"fas fa-dice-d20"},{action:"disadvantage",label:"Disadvantage",icon:"fas fa-arrow-down"}],close:()=>null,modal:true});
+  return foundry.applications.api.DialogV2.wait({window:{title:"Roll Type"},content:"<p>How would you like to roll?</p>",buttons:[{action:"advantage",label:"Advantage",icon:"fas fa-arrow-up",callback:()=> "advantage"},{action:"normal",label:"Normal",default:true,icon:"fas fa-dice-d20",callback:()=> "normal"},{action:"disadvantage",label:"Disadvantage",icon:"fas fa-arrow-down",callback:()=> "disadvantage"}],close:()=>null,modal:true});
  }
  static rollFormula(mode,bonus){
   const dice=mode==="advantage"?"2d20kh":mode==="disadvantage"?"2d20kl":"1d20";
   return new Roll(dice+" + @bonus",{bonus});
  }
- static async rollSkill(event,target){const k=target.dataset.skill,d=calculateTerran(this.document.system,this.document.items,woundState(this.document).points);if(!(k in d.skillTotals))return;const mode=await this.chooseRollMode();if(!mode)return;await this.constructor.rollFormula(mode,d.skillTotals[k]).toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:`${this.document.name} — ${label(k)} check (${mode[0].toUpperCase()+mode.slice(1)})`});}
- static async rollProwess(event,target){const k=target.dataset.prowess,d=calculateTerran(this.document.system,this.document.items,woundState(this.document).points);if(!(k in d.prowess))return;const mode=await this.chooseRollMode();if(!mode)return;await this.constructor.rollFormula(mode,d.prowess[k]).toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:`${this.document.name} — ${PROWESS_LABELS[k]} check (${mode[0].toUpperCase()+mode.slice(1)})`});}
- static async rollAttribute(event,target){const k=target.dataset.attribute,d=calculateTerran(this.document.system);if(!(k in d.attributes))return;const mode=await this.chooseRollMode();if(!mode)return;await this.constructor.rollFormula(mode,d.attributes[k]).toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:`${this.document.name} — ${ATTRIBUTE_LABELS[k]} check (${mode[0].toUpperCase()+mode.slice(1)})`});}
+ static async rollSkill(event,target){const k=target.dataset.skill,d=calculateTerran(this.document.system,this.document.items,woundState(this.document).points);if(!(k in d.skillTotals))return;const mode=await this.constructor.chooseRollMode();if(!mode)return;await this.constructor.rollFormula(mode,d.skillTotals[k]).toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:`${this.document.name} — ${label(k)} check (${mode[0].toUpperCase()+mode.slice(1)})`});}
+ static async rollProwess(event,target){const k=target.dataset.prowess,d=calculateTerran(this.document.system,this.document.items,woundState(this.document).points);if(!(k in d.prowess))return;const mode=await this.constructor.chooseRollMode();if(!mode)return;await this.constructor.rollFormula(mode,d.prowess[k]).toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:`${this.document.name} — ${PROWESS_LABELS[k]} check (${mode[0].toUpperCase()+mode.slice(1)})`});}
+ static async rollAttribute(event,target){const k=target.dataset.attribute,d=calculateTerran(this.document.system);if(!(k in d.attributes))return;const mode=await this.constructor.chooseRollMode();if(!mode)return;await this.constructor.rollFormula(mode,d.attributes[k]).toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:`${this.document.name} — ${ATTRIBUTE_LABELS[k]} check (${mode[0].toUpperCase()+mode.slice(1)})`});}
  static async describeWound(event,target){
   const location=target.dataset.location;
   const rules=location==="bleed"?null:WOUND_RULES[location];
