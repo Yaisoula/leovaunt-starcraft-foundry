@@ -86,13 +86,15 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   const profiles=selected.map(token=>targetProfile(token.actor)).filter(Boolean);
   if(selected.length!==profiles.length){ui.notifications.warn("Some targets cannot be resolved automatically.");return;}
   if(!mode.burst&&!mode.cone&&selected.length>1){ui.notifications.warn("This firing mode targets one creature. Select one target.");return;}
+  const chosenRollMode=await this.chooseRollMode();
+  if(!chosenRollMode)return;
   const charge=mode.id==="normal"&&container?.querySelector("[data-charge]")?.checked===true;
   const actionMove=!charge&&container?.querySelector("[data-action-move]")?.checked===true;
   const chargeMods=charge?chargeAttackModifiers(a):null;
   if(charge)await setChargingDefense(this.document,true);
   const accuracy=mode.accuracy+(chargeMods?chargeMods.accuracy-a.accuracy:0)-(actionMove?2:0);
-  const formula=mode.advantage?"2d20kh + @bonus":"1d20 + @bonus";
-  const roll=await new Roll(formula,{bonus:accuracy}).evaluate();
+  const rollMode=mode.advantage?(chosenRollMode==="disadvantage"?"normal":"advantage"):chosenRollMode;
+  const roll=await this.constructor.rollFormula(rollMode,accuracy).evaluate();
   if(a.requiresAmmo)await item.update({"system.currentShots":a.ammo-mode.ammo});
   const natural=roll.dice?.[0]?.results?.filter(d=>d.active).map(d=>d.result)??[];
   const natural20=natural.includes(20),natural1=natural.length>0&&natural.every(v=>v===1);
@@ -119,7 +121,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   if(charge)rollParts.push("+ 5");
   if(actionMove)rollParts.push("− 2");
   if(natural20)rollParts.push("+ 10");
-  const diceBreakdown=rollParts.join(" ");
+  const diceBreakdown=rollParts.join(" ")+" · "+(rollMode==="advantage"?"Advantage":rollMode==="disadvantage"?"Disadvantage":"Normal");
   let breakdown='<div class="sc-attack-details"><strong>'+esc(item.name)+' — '+esc(mode.label)+'</strong>'+
    '<div class="sc-roll-card sc-roll-card--'+rollTone+'"><div class="sc-roll-card-label">'+(charge?'ATTACK - CHARGE':actionMove?'ATTACK - ACTION MOVE':'ATTACK')+'</div><div class="sc-roll-card-total">'+(natural1?'Automatic Miss':effectiveTotal)+'</div><div class="sc-roll-card-breakdown">'+diceBreakdown+'</div></div>'+
    '<div class="sc-roll-card sc-roll-card--damage sc-roll-card--'+damageTone+'"><div class="sc-roll-card-label">DAMAGE</div><div class="sc-roll-card-total">'+baseDisplayDamage+'</div></div>'+
@@ -226,9 +228,16 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   await this.render();
  }
  static async onFormSubmit(event,form,formData){await this.document.update(formData.object);}
- static async rollSkill(event,target){const k=target.dataset.skill,d=calculateTerran(this.document.system,this.document.items,woundState(this.document).points);if(!(k in d.skillTotals))return;await new Roll(`1d20 + ${d.skillTotals[k]}`).toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:`${this.document.name} — ${label(k)} check`});}
- static async rollProwess(event,target){const k=target.dataset.prowess,d=calculateTerran(this.document.system,this.document.items,woundState(this.document).points);if(!(k in d.prowess))return;await new Roll(`1d20 + ${d.prowess[k]}`).toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:`${this.document.name} — ${PROWESS_LABELS[k]} check`});}
- static async rollAttribute(event,target){const k=target.dataset.attribute,d=calculateTerran(this.document.system);if(!(k in d.attributes))return;await new Roll(`1d20 + ${d.attributes[k]}`).toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:`${this.document.name} — ${ATTRIBUTE_LABELS[k]} check`});}
+ static async chooseRollMode(){
+  return foundry.applications.api.DialogV2.wait({window:{title:"Roll Type"},content:"<p>How would you like to roll?</p>",buttons:[{action:"advantage",label:"Advantage",icon:"fas fa-arrow-up"},{action:"normal",label:"Normal",default:true,icon:"fas fa-dice-d20"},{action:"disadvantage",label:"Disadvantage",icon:"fas fa-arrow-down"}],close:()=>null,modal:true});
+ }
+ static rollFormula(mode,bonus){
+  const dice=mode==="advantage"?"2d20kh":mode==="disadvantage"?"2d20kl":"1d20";
+  return new Roll(dice+" + @bonus",{bonus});
+ }
+ static async rollSkill(event,target){const k=target.dataset.skill,d=calculateTerran(this.document.system,this.document.items,woundState(this.document).points);if(!(k in d.skillTotals))return;const mode=await this.chooseRollMode();if(!mode)return;await this.constructor.rollFormula(mode,d.skillTotals[k]).toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:`${this.document.name} — ${label(k)} check (${mode[0].toUpperCase()+mode.slice(1)})`});}
+ static async rollProwess(event,target){const k=target.dataset.prowess,d=calculateTerran(this.document.system,this.document.items,woundState(this.document).points);if(!(k in d.prowess))return;const mode=await this.chooseRollMode();if(!mode)return;await this.constructor.rollFormula(mode,d.prowess[k]).toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:`${this.document.name} — ${PROWESS_LABELS[k]} check (${mode[0].toUpperCase()+mode.slice(1)})`});}
+ static async rollAttribute(event,target){const k=target.dataset.attribute,d=calculateTerran(this.document.system);if(!(k in d.attributes))return;const mode=await this.chooseRollMode();if(!mode)return;await this.constructor.rollFormula(mode,d.attributes[k]).toMessage({speaker:ChatMessage.getSpeaker({actor:this.document}),flavor:`${this.document.name} — ${ATTRIBUTE_LABELS[k]} check (${mode[0].toUpperCase()+mode.slice(1)})`});}
  static async describeWound(event,target){
   const location=target.dataset.location;
   const rules=location==="bleed"?null:WOUND_RULES[location];
