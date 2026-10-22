@@ -21,6 +21,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
  _firingModeSelections=new Map();
  _combatOptionSelections=new Map();
  _savedScrollPositions=new Map();
+ static tokenDimensions(size){const n={tiny:0.5,small:1,medium:1,large:2,huge:3,gargantuan:4}[size]??1;return {width:n,height:n};}
  static async openOrigin(event,target){const item=this.document.items.get(target.dataset.itemId);if(item&&["race","background","specialization"].includes(item.type))item.sheet.render(true);}
  static async removeOrigin(event,target){if(!this.isEditable)return;const item=this.document.items.get(target.dataset.itemId);if(!item||!["race","background","specialization"].includes(item.type))return;const yes=await foundry.applications.api.DialogV2.confirm({window:{title:"Remove Character Choice"},content:"Remove "+foundry.utils.escapeHTML(item.name)+" from this character? Characteristic Points and bonuses are not automatically refunded.",modal:true});if(yes)await item.delete();}
  async _onDrop(event){
@@ -37,6 +38,13 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   if(this.document.items.some(i=>i.uuid===item.uuid||i.getFlag("leovaunt-starcraft","sourceUuid")===item.uuid)){ui.notifications.warn("That choice is already on the character.");return;}
   const source=item.toObject();delete source._id;source.flags??={};source.flags["leovaunt-starcraft"]={...(source.flags["leovaunt-starcraft"]||{}),sourceUuid:item.uuid};
   await this.document.createEmbeddedDocuments("Item",[source]);
+  if(kind==="race"){
+   const updates={};
+   for(const key of Object.keys(ATTRIBUTE_LABELS)){const bonus=Number(item.system.raceAttributes?.[key])||0;if(bonus)updates["system.attributes."+key+".base"]=(Number(this.document.system.attributes[key].base)||0)+bonus;}
+   const size=item.system.raceSize||"medium";updates["system.size"]=size;
+   updates["prototypeToken.width"]=this.constructor.tokenDimensions(size).width;updates["prototypeToken.height"]=this.constructor.tokenDimensions(size).height;
+   await this.document.update(updates);
+  }
  }
  static async confirmPowerLevel(event,target){
   if(!this.isEditable)return;
@@ -244,7 +252,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
    ", pending wound points "+result.wounds+". Wound locations and special traits require GM review.</p>"});
   await this.render();
  }
- static async onFormSubmit(event,form,formData){await this.document.update(formData.object);}
+ static async onFormSubmit(event,form,formData){const data=formData.object;const size=data["system.size"]??data.system?.size;if(size){const dims=this.tokenDimensions(size);data["prototypeToken.width"]=dims.width;data["prototypeToken.height"]=dims.height;}await this.document.update(data);}
  static async chooseRollMode(){
   return foundry.applications.api.DialogV2.wait({window:{title:"Roll Type"},content:"<p>How would you like to roll?</p>",buttons:[{action:"advantage",label:"Advantage",icon:"fas fa-arrow-up",callback:()=> "advantage"},{action:"normal",label:"Normal",default:true,icon:"fas fa-dice-d20",callback:()=> "normal"},{action:"disadvantage",label:"Disadvantage",icon:"fas fa-arrow-down",callback:()=> "disadvantage"}],close:()=>null,modal:true});
  }

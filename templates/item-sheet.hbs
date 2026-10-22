@@ -1,8 +1,31 @@
 <section class="hud-shell sc-item-editor"><header class="hud-header"><span>STARCRAFT // ITEM EDITOR</span><strong>{{item.type}} EDITOR</strong></header>
 <div class="hud-identity hud-identity-simple"><button type="button" data-action="chooseImage" title="Choose item image"><img src="{{item.img}}" alt="Item image"/></button><div><label>Item Name<input name="name" value="{{item.name}}"/></label><label>Item Type<strong>{{item.type}}</strong></label></div></div>
 <div class="hud-tab-content">
+{{#if isRace}}<section class="hud-panel"><h3>ITEM ORGANIZATION</h3><label>Folder<select name="folder"><option value="" {{#if noFolder}}selected{{/if}}>No Folder</option>{{#each itemFolders}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}</select></label></section>{{/if}}
+
 {{#unless isOrigin}}<section class="hud-panel"><h3>GENERAL</h3><div class="hud-npc-grid"><label>Quantity<input type="number" min="0" name="system.quantity" value="{{s.quantity}}"/></label><label>Weight<input type="number" min="0" name="system.weight" value="{{s.weight}}"/></label><label>Cost<input type="number" min="0" name="system.cost" value="{{s.cost}}"/></label><label>Tier<input type="number" min="1" name="system.tier" value="{{s.tier}}"/></label></div></section>{{/unless}}
-{{#if isOrigin}}<section class="hud-panel"><h3>CHARACTER CREATION</h3><label>Characteristic Point Cost<input type="number" min="0" name="system.cost" value="{{s.cost}}"/></label><p class="hud-help">Record racial traits, granted abilities, bonuses, prerequisites, and skill focuses in Description. Applying them and spending Characteristic Points is manual.</p></section>{{/if}}
+{{#if isOrigin}}<section class="hud-panel"><h3>CHARACTER CREATION</h3><label>Characteristic Point Cost<input type="number" min="0" name="system.cost" value="{{s.cost}}"/></label><p class="hud-help">Race attributes, size and features are configured below. Characteristic Point spending remains manual.</p></section>{{/if}}
+{{#if isRace}}
+<section class="hud-panel"><h3>RACIAL ATTRIBUTES</h3><div class="hud-npc-grid">
+<label>Strength<input type="number" name="system.raceAttributes.strength" value="{{s.raceAttributes.strength}}"/></label>
+<label>Instinct<input type="number" name="system.raceAttributes.instinct" value="{{s.raceAttributes.instinct}}"/></label>
+<label>Agility<input type="number" name="system.raceAttributes.agility" value="{{s.raceAttributes.agility}}"/></label>
+<label>Fortitude<input type="number" name="system.raceAttributes.fortitude" value="{{s.raceAttributes.fortitude}}"/></label>
+<label>Intelligence<input type="number" name="system.raceAttributes.intelligence" value="{{s.raceAttributes.intelligence}}"/></label>
+<label>Willpower<input type="number" name="system.raceAttributes.willpower" value="{{s.raceAttributes.willpower}}"/></label>
+</div></section>
+<section class="hud-panel"><h3>TOKEN SIZE</h3><label>Race Size<select name="system.raceSize">
+<option value="tiny" {{#if (eq s.raceSize "tiny")}}selected{{/if}}>Tiny (0.5 × 0.5)</option>
+<option value="small" {{#if (eq s.raceSize "small")}}selected{{/if}}>Small (1 × 1)</option>
+<option value="medium" {{#if (eq s.raceSize "medium")}}selected{{/if}}>Medium (1 × 1)</option>
+<option value="large" {{#if (eq s.raceSize "large")}}selected{{/if}}>Large (2 × 2)</option>
+<option value="huge" {{#if (eq s.raceSize "huge")}}selected{{/if}}>Huge (3 × 3)</option>
+<option value="gargantuan" {{#if (eq s.raceSize "gargantuan")}}selected{{/if}}>Gargantuan (4 × 4)</option>
+</select></label></section>
+<section class="hud-panel"><h3>RACIAL FEATURES <button type="button" data-action="addRaceFeature" title="Add racial feature">+</button></h3>
+{{#each s.raceFeatures}}<div class="hud-race-feature"><label>Feature Name<input name="system.raceFeatures.{{@index}}.name" value="{{name}}"/></label><label>Description<textarea name="system.raceFeatures.{{@index}}.description" rows="3">{{description}}</textarea></label><button type="button" data-action="removeRaceFeature" data-feature-index="{{@index}}">Remove Feature</button></div>{{else}}<p class="hud-help">Use + to add racial features.</p>{{/each}}
+</section>
+{{/if}}
 {{#if isWeapon}}<section class="hud-panel"><h3>WEAPON STATISTICS</h3><div class="hud-npc-grid">
 <label>Weapon Class<select name="system.weaponClass"><option value="{{s.weaponClass}}">{{s.weaponClass}}</option><option value="Pistol">Pistol</option><option value="Rifle">Rifle</option><option value="Heavy Weapon">Heavy Weapon</option><option value="Explosive">Explosive</option><option value="Melee">Melee</option></select></label><label>Hands<input type="number" min="1" name="system.hands" value="{{s.hands}}"/></label>
 <label>Damage<input type="number" name="system.damage" value="{{s.damage}}"/></label><label>Accuracy<input type="number" name="system.accuracy" value="{{s.accuracy}}"/></label>
@@ -13,6 +36,6 @@
 {{#if isArmor}}<section class="hud-panel"><h3>ARMOR STATISTICS</h3><div class="hud-npc-grid"><label>Armor Type<input name="system.armorType" value="{{s.armorType}}"/></label><label>Armor Rating<input type="number" name="system.armorRating" value="{{s.armorRating}}"/></label><label>Damage Resistance<input type="number" name="system.armorResistance" value="{{s.armorResistance}}"/></label><label>Defense Modifier<input type="number" name="system.armorDefensePenalty" value="{{s.armorDefensePenalty}}"/></label></div><label>Special Traits<textarea name="system.specialTraits" rows="3">{{s.specialTraits}}</textarea></label></section>{{/if}}
 {{#if isGear}}<section class="hud-panel"><h3>GEAR</h3><label>Special Traits<textarea name="system.specialTraits" rows="3">{{s.specialTraits}}</textarea></label></section>{{/if}}
 <section class="hud-panel"><h3>DESCRIPTION</h3><textarea name="system.description" rows="5">{{s.description}}</textarea></section>
-<section class="hud-panel"><h3>NOTES</h3><textarea name="system.notes" rows="4">{{s.notes}}</textarea></section>
+{{#unless isRace}}<section class="hud-panel"><h3>NOTES</h3><textarea name="system.notes" rows="4">{{s.notes}}</textarea></section>{{/unless}}
 <p class="hud-help">Create items once in Foundry's Items directory, then drag copies onto Terran or NPC actors. Editing a world item does not automatically update existing actor copies.</p>
 </div></section>
