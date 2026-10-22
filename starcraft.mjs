@@ -34,3 +34,9 @@ Hooks.on("preCreateActor",(actor)=>{
  if(actor.type!=="terran")return;
  actor.updateSource({"flags.leovaunt-starcraft.powerLevelConfirmed":false,"flags.leovaunt-starcraft.raceConfirmed":false});
 });
+
+// Give newly created race entries a meaningful name instead of Foundry's generic Item.
+Hooks.on("preCreateItem",(item)=>{
+ if(item.type!=="race"||item.parent)return;
+ if(!item.name||item.name==="Item")item.updateSource({name:"New Race"});
+});
