@@ -32,6 +32,7 @@
 {{#if descriptionEditing}}<textarea data-race-description rows="12">{{s.description}}</textarea>{{else}}<div class="hud-race-prose">{{{s.description}}}</div>{{/if}}</div>
 {{else}}
 <fieldset class="hud-item-fields" {{#unless raceEditor}}disabled{{/unless}}>
+{{#if isOrigin}}<section class="hud-panel"><h3>CHARACTER CREATION</h3><label>Characteristic Point Cost<input type="number" min="0" name="system.cost" value="{{s.cost}}"/></label></section>{{/if}}
 {{#unless isOrigin}}<section class="hud-panel"><h3>GENERAL</h3><div class="hud-npc-grid"><label>Quantity<input type="number" min="0" name="system.quantity" value="{{s.quantity}}"/></label><label>Weight<input type="number" min="0" name="system.weight" value="{{s.weight}}"/></label><label>Cost<input type="number" min="0" name="system.cost" value="{{s.cost}}"/></label><label>Tier<input type="number" min="1" name="system.tier" value="{{s.tier}}"/></label></div></section>{{/unless}}
 
 {{#if isWeapon}}<section class="hud-panel"><h3>WEAPON STATISTICS</h3><div class="hud-npc-grid">
@@ -91,4 +92,8 @@
 .sc-item-editor .hud-race-identity>.hud-race-name strong{min-height:40px!important}
 .sc-item-editor .hud-item-fields{border:0;margin:0;padding:0;min-width:0}
 .sc-item-editor .hud-item-fields:disabled{opacity:1}
+.sc-item-editor .hud-race-description>.hud-race-section-heading:empty{display:none}
+.sc-item-editor .hud-race-description>.hud-race-section-heading:has(> :empty){display:none}
+.sc-item-editor .hud-race-description>.hud-race-section-heading{min-height:0}
+
 </style></section>
