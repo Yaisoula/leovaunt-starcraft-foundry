@@ -7,7 +7,6 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
  _featureEditing=new Set();
  _raceScrollPositions=new Map();
  _captureRaceScroll(){
-  if(this.document.type!=="race")return;
   const root=this.element;if(!root)return;
   const nodes=[root,...root.querySelectorAll("*")].filter(el=>el.scrollHeight>el.clientHeight+1&&el.clientHeight>0);
   for(const el of nodes){
@@ -24,7 +23,6 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
  }
  async _onRender(context,options){
   await super._onRender(context,options);
-  if(this.document.type!=="race")return;
   const root=this.element;if(!root)return;
   const nodes=[root,...root.querySelectorAll("*")];
   for(const el of nodes){
@@ -34,29 +32,28 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
   }
  }
  async render(options={},...args){
-  if(this.document.type==="race")this._captureRaceScroll();
+  this._captureRaceScroll();
   return super.render(options,...args);
  }
  async _prepareContext(options){
   const context=await super._prepareContext(options),race=this.document.type==="race";
   const features=Array.from(this.document.system.raceFeatures||[],(f,i)=>({index:i,name:f.name,description:f.description,editing:this._raceEditor&&this._featureEditing.has(i)}));
-  return {...context,item:this.document,s:this.document.system,isWeapon:this.document.type==="weapon",isArmor:this.document.type==="armor",isGear:this.document.type==="gear",isOrigin:["race","background","specialization"].includes(this.document.type),isRace:race,raceTabDescription:this._raceTab==="description",raceEditor:this._raceEditor&&this.isEditable,descriptionEditing:this._raceEditor&&this._descriptionEditing&&this.isEditable,raceFeatures:features};
+  return {...context,item:this.document,s:this.document.system,isWeapon:this.document.type==="weapon",isArmor:this.document.type==="armor",isGear:this.document.type==="gear",isOrigin:["race","background","specialization"].includes(this.document.type),isRace:race,itemTypeLabel:this.document.type.toUpperCase(),itemDetailsTab:({race:"Character Creation",weapon:"Weapon Statistics",armor:"Armor Statistics",gear:"Gear",background:"Character Creation",specialization:"Character Creation",talent:"Talent Details",ability:"Ability Details"})[this.document.type]||"Details",raceTabDescription:this._raceTab==="description",raceEditor:this._raceEditor&&this.isEditable,descriptionEditing:this._raceEditor&&this._descriptionEditing&&this.isEditable,raceFeatures:features};
  }
- static async save(event,form,formData){if(this.document.type==="race"&&!this._raceEditor)return;await this.document.update(formData.object);}
+ static async save(event,form,formData){if(!this._raceEditor)return;await this.document.update(formData.object);}
  static async toggleRaceEditor(){
-  if(!this.isEditable||this.document.type!=="race")return;
+  if(!this.isEditable)return;
   if(this._raceEditor){await this._saveVisibleRaceFields();this._descriptionEditing=false;this._featureEditing.clear();}
   this._raceEditor=!this._raceEditor;await this.render();
  }
  async _saveVisibleRaceFields(){
   const root=this.element;
   const updates={};
-  const fields=root?.querySelectorAll("[data-race-field]")||[];
-  for(const el of fields){updates[el.name]=el.type==="number"?Number(el.value):el.value;}
+  const fields=this.document.type==="race"?root?.querySelectorAll("[data-race-field]"):root?.querySelectorAll(".hud-item-fields [name],.hud-race-name input[name]");
+  for(const el of fields||[]){if(!el.name||el.disabled)continue;updates[el.name]=el.type==="number"?Number(el.value):el.type==="checkbox"?el.checked:el.value;}
   if(Object.keys(updates).length)await this.document.update(updates);
  }
  static async changeRaceTab(event,target){
-  if(this.document.type!=="race")return;
   if(this._raceEditor)await this._saveVisibleRaceFields();
   this._raceTab=target.dataset.raceTab==="creation"?"creation":"description";
   await this.render();
@@ -94,7 +91,7 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
   await this.document.update({"system.raceFeatures":entries});await this.render();
  }
  static async chooseImage(){
-  if(!this.isEditable||(this.document.type==="race"&&!this._raceEditor))return;
+  if(!this.isEditable||!this._raceEditor)return;
   const picker=new foundry.applications.apps.FilePicker({type:"image",current:this.document.img,callback:async img=>{await this.document.update({img});await this.render();}});picker.render(true);
  }
 }
