@@ -1,6 +1,8 @@
 <section class="hud-shell sc-item-editor"><header class="hud-header"><span>STARCRAFT // ITEM EDITOR</span><strong>{{item.type}} EDITOR</strong></header>
 <div class="hud-identity hud-identity-simple"><button type="button" data-action="chooseImage" title="Choose item image"><img src="{{item.img}}" alt="Item image"/></button><div><label>Item Name<input name="name" value="{{item.name}}"/></label><label>Item Type<strong>{{item.type}}</strong></label></div></div>
 <div class="hud-tab-content">
+{{#if isRace}}<section class="hud-panel"><h3>ITEM ORGANIZATION</h3><label>Folder<select name="folder"><option value="" {{#if noFolder}}selected{{/if}}>No Folder</option>{{#each itemFolders}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}</select></label></section>{{/if}}
+
 {{#unless isOrigin}}<section class="hud-panel"><h3>GENERAL</h3><div class="hud-npc-grid"><label>Quantity<input type="number" min="0" name="system.quantity" value="{{s.quantity}}"/></label><label>Weight<input type="number" min="0" name="system.weight" value="{{s.weight}}"/></label><label>Cost<input type="number" min="0" name="system.cost" value="{{s.cost}}"/></label><label>Tier<input type="number" min="1" name="system.tier" value="{{s.tier}}"/></label></div></section>{{/unless}}
 {{#if isOrigin}}<section class="hud-panel"><h3>CHARACTER CREATION</h3><label>Characteristic Point Cost<input type="number" min="0" name="system.cost" value="{{s.cost}}"/></label><p class="hud-help">Race attributes, size and features are configured below. Characteristic Point spending remains manual.</p></section>{{/if}}
 {{#if isRace}}
