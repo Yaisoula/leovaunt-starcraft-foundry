@@ -1,5 +1,5 @@
-<section class="hud-shell sc-item-editor"><header class="hud-header"><span>STARCRAFT // ITEM EDITOR</span><strong>{{item.type}} EDITOR</strong>{{#if isRace}}<button type="button" data-action="toggleRaceEditor" class="hud-race-editor-toggle">{{#if raceEditor}}Editor: ON{{else}}Editor: OFF{{/if}}</button>{{/if}}</header>
-<div class="hud-identity hud-identity-simple"><button type="button" data-action="chooseImage" title="Choose item image"><img src="{{item.img}}" alt="Item image"/></button><div><label>Item Name{{#if isRace}}{{#if raceEditor}}<input name="name" value="{{item.name}}"/>{{else}}<strong>{{item.name}}</strong>{{/if}}{{else}}<input name="name" value="{{item.name}}"/>{{/if}}</label><label>Item Type<strong>{{item.type}}</strong></label></div></div>
+<section class="hud-shell sc-item-editor"><header class="hud-header"><span>{{#if isRace}}STARCRAFT // RACE{{else}}STARCRAFT // ITEM EDITOR{{/if}}</span>{{#unless isRace}}<strong>{{item.type}} EDITOR</strong>{{/unless}}{{#if isRace}}<button type="button" data-action="toggleRaceEditor" class="hud-race-editor-toggle">{{#if raceEditor}}Editor: ON{{else}}Editor: OFF{{/if}}</button>{{/if}}</header>
+{{#if isRace}}<div class="hud-race-identity"><button type="button" data-action="chooseImage" title="Choose race image"><img src="{{item.img}}" alt="Race image"/></button><div class="hud-race-name">{{#if raceEditor}}<input name="name" value="{{item.name}}" aria-label="Race name"/>{{else}}<strong>{{item.name}}</strong>{{/if}}</div></div>{{else}}<div class="hud-identity hud-identity-simple"><button type="button" data-action="chooseImage" title="Choose item image"><img src="{{item.img}}" alt="Item image"/></button><div><label>Item Name{{#if isRace}}{{#if raceEditor}}<input name="name" value="{{item.name}}"/>{{else}}<strong>{{item.name}}</strong>{{/if}}{{else}}<input name="name" value="{{item.name}}"/>{{/if}}</label><label>Item Type<strong>{{item.type}}</strong></label></div></div>{{/if}}
 <div class="hud-tab-content">
 
 
@@ -7,8 +7,8 @@
 {{#if isRace}}
 <nav class="hud-race-tabs"><button type="button" data-action="changeRaceTab" data-race-tab="description" class="{{#if raceTabDescription}}active{{/if}}">Description</button><button type="button" data-action="changeRaceTab" data-race-tab="creation" class="{{#unless raceTabDescription}}active{{/unless}}">Character Creation</button></nav>
 {{#if raceTabDescription}}
-<section class="hud-panel"><h3>DESCRIPTION {{#if raceEditor}}{{#unless descriptionEditing}}<button type="button" data-action="editRaceDescription">Edit</button>{{/unless}}{{/if}}</h3>
-{{#if descriptionEditing}}<textarea data-race-description rows="12">{{s.description}}</textarea><button type="button" data-action="saveRaceDescription">Save Description</button>{{else}}<div class="hud-race-prose">{{{s.description}}}</div>{{/if}}</section>
+<div class="hud-race-description"><div class="hud-race-section-heading"><h3>DESCRIPTION</h3>{{#if raceEditor}}{{#if descriptionEditing}}<button type="button" data-action="saveRaceDescription">Save</button>{{else}}<button type="button" data-action="editRaceDescription">Edit</button>{{/if}}{{/if}}</div>
+{{#if descriptionEditing}}<textarea data-race-description rows="12">{{s.description}}</textarea>{{else}}<div class="hud-race-prose">{{{s.description}}}</div>{{/if}}</div>
 {{else}}
 <section class="hud-panel"><h3>CHARACTER CREATION</h3><div class="hud-race-grid"><label>Characteristic Point Cost{{#if raceEditor}}<input data-race-field type="number" name="system.cost" value="{{s.cost}}"/>{{else}}<strong class="hud-race-readonly">{{s.cost}}</strong>{{/if}}</label>
 <label>Intelligence{{#if raceEditor}}<input data-race-field type="number" name="system.raceAttributes.intelligence" value="{{s.raceAttributes.intelligence}}"/>{{else}}<strong class="hud-race-readonly">{{s.raceAttributes.intelligence}}</strong>{{/if}}</label>
@@ -18,10 +18,11 @@
 <label>Psi Level{{#if raceEditor}}<input data-race-field type="number" name="system.racePsiLevel" value="{{s.racePsiLevel}}"/>{{else}}<strong class="hud-race-readonly">{{s.racePsiLevel}}</strong>{{/if}}</label>
 <label>Agility{{#if raceEditor}}<input data-race-field type="number" name="system.raceAttributes.agility" value="{{s.raceAttributes.agility}}"/>{{else}}<strong class="hud-race-readonly">{{s.raceAttributes.agility}}</strong>{{/if}}</label>
 <label>Fortitude{{#if raceEditor}}<input data-race-field type="number" name="system.raceAttributes.fortitude" value="{{s.raceAttributes.fortitude}}"/>{{else}}<strong class="hud-race-readonly">{{s.raceAttributes.fortitude}}</strong>{{/if}}</label><label>Token Size{{#if raceEditor}}<select data-race-field name="system.raceSize"><option value="tiny" {{#if (eq s.raceSize "tiny")}}selected{{/if}}>Tiny</option><option value="small" {{#if (eq s.raceSize "small")}}selected{{/if}}>Small</option><option value="medium" {{#if (eq s.raceSize "medium")}}selected{{/if}}>Medium</option><option value="large" {{#if (eq s.raceSize "large")}}selected{{/if}}>Large</option><option value="huge" {{#if (eq s.raceSize "huge")}}selected{{/if}}>Huge</option><option value="gargantuan" {{#if (eq s.raceSize "gargantuan")}}selected{{/if}}>Gargantuan</option></select>{{else}}<strong class="hud-race-readonly">{{s.raceSize}}</strong>{{/if}}</label></div></section>
-<section class="hud-panel"><h3>RACIAL FEATURES {{#if raceEditor}}<button type="button" data-action="addRaceFeature">+</button>{{/if}}</h3>
+<section class="hud-panel hud-race-features"><div class="hud-race-section-heading"><h3>RACIAL FEATURES</h3>{{#if raceEditor}}<button type="button" data-action="addRaceFeature">+</button>{{/if}}</div>
 {{#each raceFeatures}}<div class="hud-race-feature" data-feature-row="{{index}}">
-{{#if editing}}<label>Feature Name<input data-feature-name value="{{name}}"/></label><label>Description<textarea data-feature-description rows="4">{{description}}</textarea></label><button type="button" data-action="saveRaceFeature" data-feature-index="{{index}}">Save</button>
-{{else}}<strong>{{name}}</strong><div class="hud-race-prose">{{description}}</div>{{#if ../raceEditor}}<button type="button" data-action="editRaceFeature" data-feature-index="{{index}}">Edit</button><button type="button" data-action="removeRaceFeature" data-feature-index="{{index}}">Delete</button>{{/if}}{{/if}}
+<div class="hud-race-feature-top">{{#if editing}}<label>Feature Name<input data-feature-name value="{{name}}"/></label>{{else}}<strong>{{name}}</strong>{{/if}}
+{{#if ../raceEditor}}<div class="hud-race-feature-actions">{{#if editing}}<button type="button" data-action="saveRaceFeature" data-feature-index="{{index}}">Save</button>{{else}}<button type="button" data-action="editRaceFeature" data-feature-index="{{index}}">Edit</button>{{/if}}<button type="button" data-action="removeRaceFeature" data-feature-index="{{index}}">Delete</button></div>{{/if}}</div>
+{{#if editing}}<label>Description<textarea data-feature-description rows="4">{{description}}</textarea></label>{{else}}<div class="hud-race-prose">{{description}}</div>{{/if}}
 </div>{{/each}}
 </section>
 {{/if}}
@@ -50,4 +51,23 @@
 .sc-item-editor .hud-race-prose{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}
 .sc-item-editor .hud-race-feature{border-bottom:1px solid #426374;padding:10px 0}
 .sc-item-editor .hud-race-editor-toggle{margin-left:auto;width:auto}
+
+.sc-item-editor .hud-header{display:flex;align-items:center;gap:12px;min-height:42px}
+.sc-item-editor .hud-race-editor-toggle{margin-left:auto!important;min-width:125px!important;width:125px!important;flex:0 0 125px;white-space:nowrap}
+.sc-item-editor .hud-race-identity{display:flex;align-items:center;gap:18px;padding:14px 12px;min-height:112px}
+.sc-item-editor .hud-race-identity>button{display:block;flex:0 0 88px;width:88px;height:88px;min-width:88px;min-height:88px;padding:0;overflow:hidden;border-radius:5px}
+.sc-item-editor .hud-race-identity>button img{display:block;width:100%;height:100%;object-fit:cover;aspect-ratio:1/1}
+.sc-item-editor .hud-race-name{flex:1;min-width:0}
+.sc-item-editor .hud-race-name strong{font-size:26px;line-height:1.2;overflow-wrap:anywhere}
+.sc-item-editor .hud-race-name input{font-size:24px;min-height:40px;width:100%}
+.sc-item-editor .hud-race-description{padding:0 0 10px}
+.sc-item-editor .hud-race-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#0b171d;border-left:4px solid #d5a049;padding:6px 10px;margin:0 0 10px}
+.sc-item-editor .hud-race-section-heading h3{margin:0;padding:0;background:none;border:0;flex:1}
+.sc-item-editor .hud-race-section-heading button,.sc-item-editor .hud-race-feature-actions button{width:auto!important;min-width:65px;max-width:none;padding:5px 12px;flex:none}
+.sc-item-editor .hud-race-description>.hud-race-prose{padding:0 10px}
+.sc-item-editor .hud-race-grid input,.sc-item-editor .hud-race-grid select{height:30px!important;min-height:30px!important;box-sizing:border-box}
+.sc-item-editor .hud-race-feature-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-height:34px}
+.sc-item-editor .hud-race-feature-top>strong,.sc-item-editor .hud-race-feature-top>label{flex:1;min-width:0}
+.sc-item-editor .hud-race-feature-actions{display:flex;gap:6px;flex:none;margin-left:auto}
+.sc-item-editor .hud-race-feature .hud-race-prose{margin-top:6px}
 </style></section>
