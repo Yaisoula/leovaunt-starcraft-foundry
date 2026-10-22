@@ -1,38 +1,32 @@
-<section class="hud-shell sc-item-editor"><header class="hud-header"><span>STARCRAFT // ITEM EDITOR</span><strong>{{item.type}} EDITOR</strong></header>
-<div class="hud-identity hud-identity-simple"><button type="button" data-action="chooseImage" title="Choose item image"><img src="{{item.img}}" alt="Item image"/></button><div><label>Item Name<input name="name" value="{{item.name}}"/></label><label>Item Type<strong>{{item.type}}</strong></label></div></div>
+<section class="hud-shell sc-item-editor"><header class="hud-header"><span>STARCRAFT // ITEM EDITOR</span><strong>{{item.type}} EDITOR</strong>{{#if isRace}}<button type="button" data-action="toggleRaceEditor" class="hud-race-editor-toggle">{{#if raceEditor}}Editor: ON{{else}}Editor: OFF{{/if}}</button>{{/if}}</header>
+<div class="hud-identity hud-identity-simple"><button type="button" data-action="chooseImage" title="Choose item image"><img src="{{item.img}}" alt="Item image"/></button><div><label>Item Name{{#if isRace}}{{#if raceEditor}}<input name="name" value="{{item.name}}"/>{{else}}<strong>{{item.name}}</strong>{{/if}}{{else}}<input name="name" value="{{item.name}}"/>{{/if}}</label><label>Item Type<strong>{{item.type}}</strong></label></div></div>
 <div class="hud-tab-content">
 
 
 {{#unless isOrigin}}<section class="hud-panel"><h3>GENERAL</h3><div class="hud-npc-grid"><label>Quantity<input type="number" min="0" name="system.quantity" value="{{s.quantity}}"/></label><label>Weight<input type="number" min="0" name="system.weight" value="{{s.weight}}"/></label><label>Cost<input type="number" min="0" name="system.cost" value="{{s.cost}}"/></label><label>Tier<input type="number" min="1" name="system.tier" value="{{s.tier}}"/></label></div></section>{{/unless}}
 {{#if isRace}}
-<section class="hud-panel"><h3>DESCRIPTION</h3><textarea name="system.description" rows="5">{{s.description}}</textarea></section>
-{{/if}}
-{{#if isOrigin}}<section class="hud-panel"><h3>CHARACTER CREATION</h3>
-<label>Characteristic Point Cost<input type="number" min="0" name="system.cost" value="{{s.cost}}"/></label>
-{{#if isRace}}
-<div class="hud-npc-grid">
-<label>Strength<input type="number" name="system.raceAttributes.strength" value="{{s.raceAttributes.strength}}"/></label>
-<label>Instinct<input type="number" name="system.raceAttributes.instinct" value="{{s.raceAttributes.instinct}}"/></label>
-<label>Agility<input type="number" name="system.raceAttributes.agility" value="{{s.raceAttributes.agility}}"/></label>
-<label>Fortitude<input type="number" name="system.raceAttributes.fortitude" value="{{s.raceAttributes.fortitude}}"/></label>
-<label>Intelligence<input type="number" name="system.raceAttributes.intelligence" value="{{s.raceAttributes.intelligence}}"/></label>
-<label>Willpower<input type="number" name="system.raceAttributes.willpower" value="{{s.raceAttributes.willpower}}"/></label>
-<label>Psi Level<input type="number" min="0" name="system.racePsiLevel" value="{{s.racePsiLevel}}"/></label>
-<label>Token Size<select name="system.raceSize">
-<option value="tiny" {{#if (eq s.raceSize "tiny")}}selected{{/if}}>Tiny (0.5 × 0.5)</option>
-<option value="small" {{#if (eq s.raceSize "small")}}selected{{/if}}>Small (1 × 1)</option>
-<option value="medium" {{#if (eq s.raceSize "medium")}}selected{{/if}}>Medium (1 × 1)</option>
-<option value="large" {{#if (eq s.raceSize "large")}}selected{{/if}}>Large (2 × 2)</option>
-<option value="huge" {{#if (eq s.raceSize "huge")}}selected{{/if}}>Huge (3 × 3)</option>
-<option value="gargantuan" {{#if (eq s.raceSize "gargantuan")}}selected{{/if}}>Gargantuan (4 × 4)</option>
-</select></label>
-</div>
-{{/if}}
-</section>{{/if}}
-{{#if isRace}}
-<section class="hud-panel"><h3>RACIAL FEATURES <button type="button" data-action="addRaceFeature" title="Add racial feature">+</button></h3>
-{{#each s.raceFeatures}}<div class="hud-race-feature"><label>Feature Name<input name="system.raceFeatures.{{@index}}.name" value="{{name}}"/></label><label>Description<textarea name="system.raceFeatures.{{@index}}.description" rows="3">{{description}}</textarea></label><button type="button" data-action="removeRaceFeature" data-feature-index="{{@index}}">Remove Feature</button></div>{{/each}}
+<nav class="hud-race-tabs"><button type="button" data-action="changeRaceTab" data-race-tab="description" class="{{#if raceTabDescription}}active{{/if}}">Description</button><button type="button" data-action="changeRaceTab" data-race-tab="creation" class="{{#unless raceTabDescription}}active{{/unless}}">Character Creation</button></nav>
+{{#if raceTabDescription}}
+<section class="hud-panel"><h3>DESCRIPTION {{#if raceEditor}}{{#unless descriptionEditing}}<button type="button" data-action="editRaceDescription">Edit</button>{{/unless}}{{/if}}</h3>
+{{#if descriptionEditing}}<textarea data-race-description rows="12">{{s.description}}</textarea><button type="button" data-action="saveRaceDescription">Save Description</button>{{else}}<div class="hud-race-prose">{{{s.description}}}</div>{{/if}}</section>
+{{else}}
+<section class="hud-panel"><h3>CHARACTER CREATION</h3><div class="hud-race-grid"><label>Characteristic Point Cost{{#if raceEditor}}<input data-race-field type="number" name="system.cost" value="{{s.cost}}"/>{{else}}<strong class="hud-race-readonly">{{s.cost}}</strong>{{/if}}</label>
+<label>Intelligence{{#if raceEditor}}<input data-race-field type="number" name="system.raceAttributes.intelligence" value="{{s.raceAttributes.intelligence}}"/>{{else}}<strong class="hud-race-readonly">{{s.raceAttributes.intelligence}}</strong>{{/if}}</label>
+<label>Willpower{{#if raceEditor}}<input data-race-field type="number" name="system.raceAttributes.willpower" value="{{s.raceAttributes.willpower}}"/>{{else}}<strong class="hud-race-readonly">{{s.raceAttributes.willpower}}</strong>{{/if}}</label>
+<label>Strength{{#if raceEditor}}<input data-race-field type="number" name="system.raceAttributes.strength" value="{{s.raceAttributes.strength}}"/>{{else}}<strong class="hud-race-readonly">{{s.raceAttributes.strength}}</strong>{{/if}}</label>
+<label>Instinct{{#if raceEditor}}<input data-race-field type="number" name="system.raceAttributes.instinct" value="{{s.raceAttributes.instinct}}"/>{{else}}<strong class="hud-race-readonly">{{s.raceAttributes.instinct}}</strong>{{/if}}</label>
+<label>Psi Level{{#if raceEditor}}<input data-race-field type="number" name="system.racePsiLevel" value="{{s.racePsiLevel}}"/>{{else}}<strong class="hud-race-readonly">{{s.racePsiLevel}}</strong>{{/if}}</label>
+<label>Agility{{#if raceEditor}}<input data-race-field type="number" name="system.raceAttributes.agility" value="{{s.raceAttributes.agility}}"/>{{else}}<strong class="hud-race-readonly">{{s.raceAttributes.agility}}</strong>{{/if}}</label>
+<label>Fortitude{{#if raceEditor}}<input data-race-field type="number" name="system.raceAttributes.fortitude" value="{{s.raceAttributes.fortitude}}"/>{{else}}<strong class="hud-race-readonly">{{s.raceAttributes.fortitude}}</strong>{{/if}}</label><label>Token Size{{#if raceEditor}}<select data-race-field name="system.raceSize"><option value="tiny" {{#if (eq s.raceSize "tiny")}}selected{{/if}}>Tiny</option><option value="small" {{#if (eq s.raceSize "small")}}selected{{/if}}>Small</option><option value="medium" {{#if (eq s.raceSize "medium")}}selected{{/if}}>Medium</option><option value="large" {{#if (eq s.raceSize "large")}}selected{{/if}}>Large</option><option value="huge" {{#if (eq s.raceSize "huge")}}selected{{/if}}>Huge</option><option value="gargantuan" {{#if (eq s.raceSize "gargantuan")}}selected{{/if}}>Gargantuan</option></select>{{else}}<strong class="hud-race-readonly">{{s.raceSize}}</strong>{{/if}}</label></div></section>
+<section class="hud-panel"><h3>RACIAL FEATURES {{#if raceEditor}}<button type="button" data-action="addRaceFeature">+</button>{{/if}}</h3>
+{{#each raceFeatures}}<div class="hud-race-feature" data-feature-row="{{index}}">
+{{#if editing}}<label>Feature Name<input data-feature-name value="{{name}}"/></label><label>Description<textarea data-feature-description rows="4">{{description}}</textarea></label><button type="button" data-action="saveRaceFeature" data-feature-index="{{index}}">Save</button>
+{{else}}<strong>{{name}}</strong><div class="hud-race-prose">{{description}}</div>{{#if ../raceEditor}}<button type="button" data-action="editRaceFeature" data-feature-index="{{index}}">Edit</button><button type="button" data-action="removeRaceFeature" data-feature-index="{{index}}">Delete</button>{{/if}}{{/if}}
+</div>{{/each}}
 </section>
+{{/if}}
+{{else}}
+{{#if isOrigin}}<section class="hud-panel"><h3>CHARACTER CREATION</h3><label>Characteristic Point Cost<input type="number" min="0" name="system.cost" value="{{s.cost}}"/></label></section>{{/if}}
 {{/if}}
 {{#if isWeapon}}<section class="hud-panel"><h3>WEAPON STATISTICS</h3><div class="hud-npc-grid">
 <label>Weapon Class<select name="system.weaponClass"><option value="{{s.weaponClass}}">{{s.weaponClass}}</option><option value="Pistol">Pistol</option><option value="Rifle">Rifle</option><option value="Heavy Weapon">Heavy Weapon</option><option value="Explosive">Explosive</option><option value="Melee">Melee</option></select></label><label>Hands<input type="number" min="1" name="system.hands" value="{{s.hands}}"/></label>
@@ -45,5 +39,15 @@
 {{#if isGear}}<section class="hud-panel"><h3>GEAR</h3><label>Special Traits<textarea name="system.specialTraits" rows="3">{{s.specialTraits}}</textarea></label></section>{{/if}}
 {{#unless isRace}}<section class="hud-panel"><h3>DESCRIPTION</h3><textarea name="system.description" rows="5">{{s.description}}</textarea></section>{{/unless}}
 {{#unless isRace}}<section class="hud-panel"><h3>NOTES</h3><textarea name="system.notes" rows="4">{{s.notes}}</textarea></section>{{/unless}}
-<p class="hud-help">Create items once in Foundry's Items directory, then drag copies onto Terran or NPC actors. Editing a world item does not automatically update existing actor copies.</p>
-</div></section>
+{{#unless isRace}}<p class="hud-help">Create items once in Foundry's Items directory, then drag copies onto Terran or NPC actors. Editing a world item does not automatically update existing actor copies.</p>{{/unless}}
+</div><style>
+.sc-item-editor .hud-race-tabs{display:flex;gap:8px;margin:12px 0}
+.sc-item-editor .hud-race-tabs button{flex:1;padding:8px}
+.sc-item-editor .hud-race-tabs .active{border-bottom:3px solid #e7b34e}
+.sc-item-editor .hud-race-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.sc-item-editor .hud-race-grid label{min-width:0}
+.sc-item-editor .hud-race-readonly{display:block;padding:7px;border:1px solid #426374;border-radius:4px}
+.sc-item-editor .hud-race-prose{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}
+.sc-item-editor .hud-race-feature{border-bottom:1px solid #426374;padding:10px 0}
+.sc-item-editor .hud-race-editor-toggle{margin-left:auto;width:auto}
+</style></section>
