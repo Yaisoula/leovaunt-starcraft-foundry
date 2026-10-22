@@ -30,7 +30,10 @@
       "armor": {},
       "gear": {},
       "talent": {},
-      "ability": {}
+      "ability": {},
+      "race": {},
+      "background": {},
+      "specialization": {}
     }
   },
   "grid": {
