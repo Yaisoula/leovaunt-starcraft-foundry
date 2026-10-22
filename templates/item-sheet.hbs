@@ -6,7 +6,7 @@
 {{#if isRace}}
 <nav class="hud-race-tabs"><button type="button" data-action="changeRaceTab" data-race-tab="description" class="{{#if raceTabDescription}}active{{/if}}">Description</button><button type="button" data-action="changeRaceTab" data-race-tab="creation" class="{{#unless raceTabDescription}}active{{/unless}}">Character Creation</button></nav>
 {{#if raceTabDescription}}
-<div class="hud-race-description"><div class="hud-race-section-heading">{{#if raceEditor}}{{#if descriptionEditing}}<button type="button" data-action="saveRaceDescription">Save</button>{{else}}<button type="button" data-action="editRaceDescription">Edit</button>{{/if}}{{/if}}</div>
+<div class="hud-race-description">{{#if raceEditor}}<div class="hud-race-section-heading">{{#if descriptionEditing}}<button type="button" data-action="saveRaceDescription">Save</button>{{else}}<button type="button" data-action="editRaceDescription">Edit</button>{{/if}}</div>{{/if}}
 {{#if descriptionEditing}}<textarea data-race-description rows="12">{{s.description}}</textarea>{{else}}<div class="hud-race-prose">{{{s.description}}}</div>{{/if}}</div>
 {{else}}
 <section class="hud-panel"><h3>CHARACTER CREATION</h3><div class="hud-race-grid"><label>Characteristic Point Cost{{#if raceEditor}}<input data-race-field type="number" name="system.cost" value="{{s.cost}}"/>{{else}}<strong class="hud-race-readonly">{{s.cost}}</strong>{{/if}}</label>
