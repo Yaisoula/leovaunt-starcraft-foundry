@@ -3,17 +3,7 @@
 <div class="hud-tab-content">
 
 
-{{#unless isOrigin}}<section class="hud-panel"><h3>GENERAL</h3><div class="hud-npc-grid"><label>Quantity<input type="number" min="0" name="system.quantity" value="{{s.quantity}}"/></label><label>Weight<input type="number" min="0" name="system.weight" value="{{s.weight}}"/></label><label>Cost<input type="number" min="0" name="system.cost" value="{{s.cost}}"/></label><label>Tier<input type="number" min="1" name="system.tier" value="{{s.tier}}"/></label></div><style>
-.sc-item-editor .hud-race-tabs{display:flex;gap:8px;margin:12px 0}
-.sc-item-editor .hud-race-tabs button{flex:1;padding:8px}
-.sc-item-editor .hud-race-tabs .active{border-bottom:3px solid #e7b34e}
-.sc-item-editor .hud-race-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.sc-item-editor .hud-race-grid label{min-width:0}
-.sc-item-editor .hud-race-readonly{display:block;padding:7px;border:1px solid #426374;border-radius:4px}
-.sc-item-editor .hud-race-prose{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}
-.sc-item-editor .hud-race-feature{border-bottom:1px solid #426374;padding:10px 0}
-.sc-item-editor .hud-race-editor-toggle{margin-left:auto;width:auto}
-</style></section>{{/unless}}
+{{#unless isOrigin}}<section class="hud-panel"><h3>GENERAL</h3><div class="hud-npc-grid"><label>Quantity<input type="number" min="0" name="system.quantity" value="{{s.quantity}}"/></label><label>Weight<input type="number" min="0" name="system.weight" value="{{s.weight}}"/></label><label>Cost<input type="number" min="0" name="system.cost" value="{{s.cost}}"/></label><label>Tier<input type="number" min="1" name="system.tier" value="{{s.tier}}"/></label></div></section>{{/unless}}
 {{#if isRace}}
 <nav class="hud-race-tabs"><button type="button" data-action="changeRaceTab" data-race-tab="description" class="{{#if raceTabDescription}}active{{/if}}">Description</button><button type="button" data-action="changeRaceTab" data-race-tab="creation" class="{{#unless raceTabDescription}}active{{/unless}}">Character Creation</button></nav>
 {{#if raceTabDescription}}
@@ -50,4 +40,14 @@
 {{#unless isRace}}<section class="hud-panel"><h3>DESCRIPTION</h3><textarea name="system.description" rows="5">{{s.description}}</textarea></section>{{/unless}}
 {{#unless isRace}}<section class="hud-panel"><h3>NOTES</h3><textarea name="system.notes" rows="4">{{s.notes}}</textarea></section>{{/unless}}
 {{#unless isRace}}<p class="hud-help">Create items once in Foundry's Items directory, then drag copies onto Terran or NPC actors. Editing a world item does not automatically update existing actor copies.</p>{{/unless}}
-</div></section>
+</div><style>
+.sc-item-editor .hud-race-tabs{display:flex;gap:8px;margin:12px 0}
+.sc-item-editor .hud-race-tabs button{flex:1;padding:8px}
+.sc-item-editor .hud-race-tabs .active{border-bottom:3px solid #e7b34e}
+.sc-item-editor .hud-race-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.sc-item-editor .hud-race-grid label{min-width:0}
+.sc-item-editor .hud-race-readonly{display:block;padding:7px;border:1px solid #426374;border-radius:4px}
+.sc-item-editor .hud-race-prose{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}
+.sc-item-editor .hud-race-feature{border-bottom:1px solid #426374;padding:10px 0}
+.sc-item-editor .hud-race-editor-toggle{margin-left:auto;width:auto}
+</style></section>
