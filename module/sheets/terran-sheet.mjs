@@ -39,6 +39,7 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
     }
     updates["system.resources.characteristicPoints"]=(Number(actor.system.resources.characteristicPoints)||0)+(Number(applied.cost)||0);
     updates["system.combat.psiLevel"]=Number(applied.previousPsi)||0;
+    updates["system.combat.psiLevelMax"]=Number(applied.previousPsiMax)||0;
     updates["system.size"]=applied.previousSize||"medium";
     updates["prototypeToken.width"]=Number(applied.previousTokenWidth)||1;
     updates["prototypeToken.height"]=Number(applied.previousTokenHeight)||1;
@@ -64,8 +65,8 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
    const actor=this.document,cost=Math.max(0,Number(item.system.cost)||0),available=Number(actor.system.resources.characteristicPoints)||0;
    if(cost>available){ui.notifications.warn("Not enough characteristic points to select this race.");return;}
    const bonuses=Object.fromEntries(Object.keys(ATTRIBUTE_LABELS).map(key=>[key,Number(item.system.raceAttributes?.[key])||0]));
-   source.flags["leovaunt-starcraft"].appliedRace={attributes:bonuses,cost,previousPsi:Number(actor.system.combat.psiLevel)||0,previousSize:actor.system.size||"medium",previousTokenWidth:actor.prototypeToken.width,previousTokenHeight:actor.prototypeToken.height};
-   const updates={"system.resources.characteristicPoints":available-cost,"system.combat.psiLevel":Number(item.system.racePsiLevel)||0,"system.size":item.system.raceSize||"medium"};
+   source.flags["leovaunt-starcraft"].appliedRace={attributes:bonuses,cost,previousPsi:Number(actor.system.combat.psiLevel)||0,previousPsiMax:Number(actor.system.combat.psiLevelMax)||0,previousSize:actor.system.size||"medium",previousTokenWidth:actor.prototypeToken.width,previousTokenHeight:actor.prototypeToken.height};
+   const updates={"system.resources.characteristicPoints":available-cost,"system.combat.psiLevel":Number(item.system.racePsiLevel)||0,"system.combat.psiLevelMax":Math.max(Number(item.system.raceMaxPsiLevel)||0,Number(item.system.racePsiLevel)||0),"system.size":item.system.raceSize||"medium"};
    for(const [key,bonus] of Object.entries(bonuses))if(bonus)updates["system.attributes."+key+".base"]=(Number(actor.system.attributes[key].base)||0)+bonus;
    Object.assign(updates,{"prototypeToken.width":this.constructor.tokenDimensions(item.system.raceSize||"medium").width,"prototypeToken.height":this.constructor.tokenDimensions(item.system.raceSize||"medium").height});
    const created=await actor.createEmbeddedDocuments("Item",[source]);
