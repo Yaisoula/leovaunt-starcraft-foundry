@@ -254,6 +254,9 @@
 .terran-hud .hud-progression-power-grid .hud-power-stats{display:grid!important;grid-template-columns:1fr!important;gap:5px!important}
 .terran-hud .hud-progression-power-grid .hud-progression-fields{max-width:none!important}
 @media(max-width:700px){.terran-hud .hud-progression-power-grid{grid-template-columns:1fr}}
+
+.sc-item-editor prose-mirror,.terran-hud prose-mirror{display:block;width:100%;min-width:0;min-height:140px;box-sizing:border-box}
+.sc-item-editor prose-mirror .prosemirror,.terran-hud prose-mirror .prosemirror{min-height:120px}
 </style>
 <header class="hud-header"><span>RAIDERS // PERSONNEL FILE</span><strong>TERRAN INTERFACE • ALPHA</strong></header>
 <div class="hud-identity hud-identity-simple hud-identity-telemetry"><img src="{{actor.img}}" alt="Portrait"/><div class="hud-identity-stats"><label>Character Name <input name="name" value="{{actor.name}}" placeholder="Enter character name"/></label><div class="hud-values"><div>Defense <b>{{derived.computed.defense}}</b></div><div>Toughness <b>{{derived.computed.toughness}}</b></div><div>Resolve <b>{{derived.computed.resolve}}</b></div><div>Damage Threshold <b>{{derived.computed.damageThreshold}}</b></div><div>Damage Resistance <b>{{derived.computed.damageResistance}}</b></div><div>Psionic Resistance <b>{{derived.computed.psionicResistance}}</b></div><div>Healing Threshold <b>{{derived.computed.healingThreshold}}</b></div><div>Move <b>{{derived.computed.moveSpeed}}</b></div><div>Shift <b>{{derived.computed.shiftSpeed}}</b></div><div>Initiative <b>{{derived.computed.initiative}}</b></div><div>Morale Bonus <b>{{derived.computed.moraleBonus}}</b></div></div></div></div>
@@ -441,9 +444,9 @@
 <option value="huge" {{#if (eq s.size "huge")}}selected{{/if}}>Huge (3 × 3)</option>
 <option value="gargantuan" {{#if (eq s.size "gargantuan")}}selected{{/if}}>Gargantuan (4 × 4)</option>
 </select></label>
-<label class="hud-bio-story">Backstory &amp; Additional Information<textarea name="system.notes" rows="14" placeholder="Write your character's history, personality, goals, and additional information here...">{{s.notes}}</textarea></label>
+<label class="hud-bio-story">Backstory &amp; Additional Information<prose-mirror name="system.notes" value="{{s.notes}}" document-uuid="{{actor.uuid}}"></prose-mirror></label>
 </section>
-<section class="hud-panel sc-permanent-injuries"><h3>PERMANENT INJURY RECORD</h3><label class="hud-bio-story"><strong>Recorded Maiming Injuries</strong><textarea rows="5" data-injury-notes placeholder="Describe permanent injuries, lost limbs, scars, and other lasting effects...">{{permanentInjuryNotes}}</textarea></label><h4>System-Recorded Injuries</h4>{{#each permanentWounds.injuries}}<div class="sc-wound-row"><strong>{{location}} injury</strong>{{#if ../isGM}}<input type="text" maxlength="500" value="{{description}}" data-permanent-injury="{{id}}"/><button type="button" data-action="editPermanentInjury" data-injury-id="{{id}}">Save Description</button><button type="button" data-action="removePermanentInjury" data-injury-id="{{id}}">Remove Injury</button>{{else}}<p>{{description}}</p>{{/if}}</div>{{else}}<p class="hud-help">No permanent injuries recorded.</p>{{/each}}</section>
+<section class="hud-panel sc-permanent-injuries"><h3>PERMANENT INJURY RECORD</h3><label class="hud-bio-story"><strong>Recorded Maiming Injuries</strong><prose-mirror data-injury-notes value="{{permanentInjuryNotes}}" document-uuid="{{actor.uuid}}"></prose-mirror></label><h4>System-Recorded Injuries</h4>{{#each permanentWounds.injuries}}<div class="sc-wound-row"><strong>{{location}} injury</strong>{{#if ../isGM}}<input type="text" maxlength="500" value="{{description}}" data-permanent-injury="{{id}}"/><button type="button" data-action="editPermanentInjury" data-injury-id="{{id}}">Save Description</button><button type="button" data-action="removePermanentInjury" data-injury-id="{{id}}">Remove Injury</button>{{else}}<p>{{description}}</p>{{/if}}</div>{{else}}<p class="hud-help">No permanent injuries recorded.</p>{{/each}}</section>
 {{/if}}
 </div>
 
