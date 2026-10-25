@@ -1,3 +1,4 @@
+import { mountRichTextEditors, syncRichTextEditors } from "../utils/rich-text.mjs";
 export class StarcraftItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ItemSheetV2){
  static DEFAULT_OPTIONS={classes:["leovaunt","terran-hud","sc-item-sheet"],position:{width:660,height:680},window:{resizable:true,title:"StarCraft Item Editor"},form:{submitOnChange:true,closeOnSubmit:false,handler:StarcraftItemSheet.save},actions:{chooseImage:StarcraftItemSheet.chooseImage,addRaceFeature:StarcraftItemSheet.addRaceFeature,removeRaceFeature:StarcraftItemSheet.removeRaceFeature,toggleRaceEditor:StarcraftItemSheet.toggleRaceEditor,changeRaceTab:StarcraftItemSheet.changeRaceTab,editRaceDescription:StarcraftItemSheet.editRaceDescription,saveRaceDescription:StarcraftItemSheet.saveRaceDescription,editRaceFeature:StarcraftItemSheet.editRaceFeature,saveRaceFeature:StarcraftItemSheet.saveRaceFeature}};
  static PARTS={main:{template:"systems/leovaunt-starcraft/templates/item-sheet.hbs"}};
@@ -8,7 +9,6 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
  _raceScrollPositions=new Map();
  _captureRaceScroll(){
   const root=this.element;if(!root)return;
-  root.addEventListener('click',event=>this._onFormatClick(event));
   const nodes=[root,...root.querySelectorAll("*")].filter(el=>el.scrollHeight>el.clientHeight+1&&el.clientHeight>0);
   for(const el of nodes){
    const key=el===root?"root":this._raceScrollKey(el);
@@ -23,10 +23,10 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
   return classes.find(k=>el.classList.contains(k))||null;
  }
 
- _onFormatClick(event){const button=event.target.closest('[data-format]');if(!button)return;event.preventDefault();const textarea=button.closest('.sc-richtext-box')?.querySelector('textarea');if(!textarea||textarea.disabled)return;const a=textarea.selectionStart,b=textarea.selectionEnd,selected=textarea.value.slice(a,b);const kind=button.dataset.format;let insert=selected;switch(kind){case 'bold':insert='<strong>'+selected+'</strong>';break;case 'italic':insert='<em>'+selected+'</em>';break;case 'heading':insert='<h3>'+selected+'</h3>';break;case 'bullet':insert='<ul><li>'+selected+'</li></ul>';break;case 'number':insert='<ol><li>'+selected+'</li></ol>';break;case 'link':insert='<a href="https://example.com">'+(selected||'link text')+'</a>';break;}textarea.setRangeText(insert,a,b,'select');textarea.dispatchEvent(new Event('change',{bubbles:true}));textarea.focus();}
  async _onRender(context,options){
   await super._onRender(context,options);
   const root=this.element;if(!root)return;
+  if(this.isEditable)mountRichTextEditors(root,this.document);
   const nodes=[root,...root.querySelectorAll("*")];
   for(const el of nodes){
    const key=el===root?"root":this._raceScrollKey(el);
@@ -44,13 +44,15 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
   return {...context,item:this.document,s:this.document.system,isWeapon:this.document.type==="weapon",isArmor:this.document.type==="armor",isGear:this.document.type==="gear",isOrigin:["race","background","specialization"].includes(this.document.type),isRace:race,itemTypeLabel:this.document.type.toUpperCase(),itemDetailsTab:({race:"Character Creation",weapon:"Weapon Statistics",armor:"Armor Statistics",gear:"Gear",background:"Character Creation",specialization:"Character Creation",talent:"Talent Details",ability:"Ability Details"})[this.document.type]||"Details",raceTabDescription:this._raceTab==="description",raceEditor:this._raceEditor&&this.isEditable,descriptionEditing:this._raceEditor&&this._descriptionEditing&&this.isEditable,raceFeatures:features};
  }
  
- static async save(event,form,formData){if(!this._raceEditor)return;const data=formData.object;await this.document.update(data);}
+ static async save(event,form,formData){if(!this._raceEditor)return;syncRichTextEditors(this.element);const data=formData.object;
+ for(const field of this.element?.querySelectorAll('.sc-richtext-box textarea[name]')||[])data[field.name]=field.value;await this.document.update(data);}
  static async toggleRaceEditor(){
   if(!this.isEditable)return;
   if(this._raceEditor){await this._saveVisibleRaceFields();this._descriptionEditing=false;this._featureEditing.clear();}
   this._raceEditor=!this._raceEditor;await this.render();
  }
  async _saveVisibleRaceFields(){
+  syncRichTextEditors(this.element);
   const root=this.element;
   const updates={};
   const fields=this.document.type==="race"?root?.querySelectorAll("[data-race-field]"):root?.querySelectorAll(".hud-item-fields [name],.hud-race-name input[name]");
@@ -66,6 +68,7 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
  static async editRaceDescription(){if(!this.isEditable||!this._raceEditor)return;this._descriptionEditing=true;await this.render();}
  static async saveRaceDescription(){
   if(!this.isEditable||!this._raceEditor)return;
+  syncRichTextEditors(this.element);
   const value=this.element?.querySelector("[data-race-description]")?.value;
   if(value!==undefined)await this.document.update({"system.description":value});
   this._descriptionEditing=false;await this.render();
@@ -73,6 +76,7 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
  static async editRaceFeature(event,target){if(!this.isEditable||!this._raceEditor)return;this._featureEditing.add(Number(target.dataset.featureIndex));await this.render();}
  static async saveRaceFeature(event,target){
   if(!this.isEditable||!this._raceEditor)return;
+  syncRichTextEditors(this.element);
   const i=Number(target.dataset.featureIndex),row=this.element?.querySelector('[data-feature-row="'+i+'"]');
   const entries=this.document.system.raceFeatures.map(x=>({name:x.name,description:x.description}));
   if(!row||!entries[i])return;
