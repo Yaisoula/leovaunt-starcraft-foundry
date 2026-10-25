@@ -40,7 +40,7 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
   const features=Array.from(this.document.system.raceFeatures||[],(f,i)=>({index:i,name:f.name,description:f.description,editing:this._raceEditor&&this._featureEditing.has(i)}));
   return {...context,item:this.document,s:this.document.system,isWeapon:this.document.type==="weapon",isArmor:this.document.type==="armor",isGear:this.document.type==="gear",isOrigin:["race","background","specialization"].includes(this.document.type),isRace:race,itemTypeLabel:this.document.type.toUpperCase(),itemDetailsTab:({race:"Character Creation",weapon:"Weapon Statistics",armor:"Armor Statistics",gear:"Gear",background:"Character Creation",specialization:"Character Creation",talent:"Talent Details",ability:"Ability Details"})[this.document.type]||"Details",raceTabDescription:this._raceTab==="description",raceEditor:this._raceEditor&&this.isEditable,descriptionEditing:this._raceEditor&&this._descriptionEditing&&this.isEditable,raceFeatures:features};
  }
- static _richValue(element){if(!element)return undefined;const content=element.querySelector('[contenteditable="true"]');return content?content.innerHTML:element.value;}
+ static _richValue(element){if(!element)return undefined;return element.value;}
  static async save(event,form,formData){if(!this._raceEditor)return;const data=formData.object;for(const el of this.element?.querySelectorAll('.hud-item-fields prose-mirror[name]')||[]){const value=this.constructor._richValue(el);if(value!==undefined)data[el.name]=value;}await this.document.update(data);}
  static async toggleRaceEditor(){
   if(!this.isEditable)return;
