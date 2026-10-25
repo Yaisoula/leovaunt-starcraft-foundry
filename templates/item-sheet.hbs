@@ -114,7 +114,7 @@
    The original textarea stays available until the native editor successfully opens. */
 .sc-richtext-box{display:block;position:relative;width:100%;min-width:0;overflow:visible}
 .sc-richtext-box > textarea{display:block;box-sizing:border-box;width:100%;min-height:130px;resize:vertical}
-.sc-richtext-box.sc-editor-pending > prose-mirror{display:none}
+.sc-richtext-box.sc-editor-pending > prose-mirror{display:block;position:absolute;inset:0 auto auto 0;width:100%;visibility:hidden;pointer-events:none}
 .sc-richtext-box.sc-editor-active > textarea{display:none}
 .sc-richtext-box.sc-editor-active > prose-mirror{display:block;width:100%;min-width:0;min-height:150px}
 .sc-richtext-box prose-mirror .prosemirror-menu{max-width:100%;flex-wrap:wrap}
