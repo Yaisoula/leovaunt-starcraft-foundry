@@ -1,3 +1,4 @@
+import { mountRichTextEditors, syncRichTextEditors } from "../utils/rich-text.mjs";
 import {adjustMorale,applyWoundMorale} from "../rules/morale.mjs";
 import {setWoundPoints,setBleedValue} from "../rules/wounds.mjs";
 import {grabAthletics,grabToughness,grabState,startGrab,endGrab} from "../rules/grab.mjs";
@@ -246,9 +247,8 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
   return result;
  }
 
- _onFormatClick(event){const button=event.target.closest('[data-format]');if(!button)return;event.preventDefault();const textarea=button.closest('.sc-richtext-box')?.querySelector('textarea');if(!textarea||textarea.disabled)return;const a=textarea.selectionStart,b=textarea.selectionEnd,selected=textarea.value.slice(a,b);const kind=button.dataset.format;let insert=selected;switch(kind){case 'bold':insert='<strong>'+selected+'</strong>';break;case 'italic':insert='<em>'+selected+'</em>';break;case 'heading':insert='<h3>'+selected+'</h3>';break;case 'bullet':insert='<ul><li>'+selected+'</li></ul>';break;case 'number':insert='<ol><li>'+selected+'</li></ol>';break;case 'link':insert='<a href="https://example.com">'+(selected||'link text')+'</a>';break;}textarea.setRangeText(insert,a,b,'select');textarea.dispatchEvent(new Event('change',{bubbles:true}));textarea.focus();}
  async _onRender(context,options){await super._onRender(context,options);const root=this.element;
- root?.addEventListener('click',event=>this._onFormatClick(event));
+ if(this.isEditable)mountRichTextEditors(root,this.document);
  root?.querySelectorAll('[data-origin-context]').forEach(row=>row.addEventListener("contextmenu",event=>{
   event.preventDefault();event.stopPropagation();if(!this.isEditable)return;
   root.querySelectorAll(".hud-origin-inline-menu").forEach(menu=>{if(menu!==row.querySelector(".hud-origin-inline-menu"))menu.hidden=true;});
@@ -289,7 +289,8 @@ export class TerranSheet extends foundry.applications.api.HandlebarsApplicationM
    ", pending wound points "+result.wounds+". Wound locations and special traits require GM review.</p>"});
   await this.render();
  }
- static async onFormSubmit(event,form,formData){const data=formData.object;const size=data["system.size"]??data.system?.size;if(size){const dims=this.tokenDimensions(size);data["prototypeToken.width"]=dims.width;data["prototypeToken.height"]=dims.height;}await this.document.update(data);}
+ static async onFormSubmit(event,form,formData){syncRichTextEditors(this.element);const data=formData.object;
+ const notes=this.element?.querySelector('textarea[name="system.notes"]');if(notes)data["system.notes"]=notes.value;const size=data["system.size"]??data.system?.size;if(size){const dims=this.tokenDimensions(size);data["prototypeToken.width"]=dims.width;data["prototypeToken.height"]=dims.height;}await this.document.update(data);}
  static async chooseRollMode(){
   return foundry.applications.api.DialogV2.wait({window:{title:"Roll Type"},content:"<p>How would you like to roll?</p>",buttons:[{action:"advantage",label:"Advantage",icon:"fas fa-arrow-up",callback:()=> "advantage"},{action:"normal",label:"Normal",default:true,icon:"fas fa-dice-d20",callback:()=> "normal"},{action:"disadvantage",label:"Disadvantage",icon:"fas fa-arrow-down",callback:()=> "disadvantage"}],close:()=>null,modal:true});
  }
