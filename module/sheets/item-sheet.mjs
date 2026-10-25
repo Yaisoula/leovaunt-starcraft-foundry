@@ -8,6 +8,7 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
  _raceScrollPositions=new Map();
  _captureRaceScroll(){
   const root=this.element;if(!root)return;
+  root.addEventListener('click',event=>this._onFormatClick(event));
   const nodes=[root,...root.querySelectorAll("*")].filter(el=>el.scrollHeight>el.clientHeight+1&&el.clientHeight>0);
   for(const el of nodes){
    const key=el===root?"root":this._raceScrollKey(el);
@@ -21,6 +22,8 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
   const classes=["hud-race-description","hud-race-features","hud-race-prose"];
   return classes.find(k=>el.classList.contains(k))||null;
  }
+
+ _onFormatClick(event){const button=event.target.closest('[data-format]');if(!button)return;event.preventDefault();const textarea=button.closest('.sc-richtext-box')?.querySelector('textarea');if(!textarea||textarea.disabled)return;const a=textarea.selectionStart,b=textarea.selectionEnd,selected=textarea.value.slice(a,b);const kind=button.dataset.format;let insert=selected;switch(kind){case 'bold':insert='<strong>'+selected+'</strong>';break;case 'italic':insert='<em>'+selected+'</em>';break;case 'heading':insert='<h3>'+selected+'</h3>';break;case 'bullet':insert='<ul><li>'+selected+'</li></ul>';break;case 'number':insert='<ol><li>'+selected+'</li></ol>';break;case 'link':insert='<a href="https://example.com">'+(selected||'link text')+'</a>';break;}textarea.setRangeText(insert,a,b,'select');textarea.dispatchEvent(new Event('change',{bubbles:true}));textarea.focus();}
  async _onRender(context,options){
   await super._onRender(context,options);
   const root=this.element;if(!root)return;
@@ -40,8 +43,8 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
   const features=Array.from(this.document.system.raceFeatures||[],(f,i)=>({index:i,name:f.name,description:f.description,editing:this._raceEditor&&this._featureEditing.has(i)}));
   return {...context,item:this.document,s:this.document.system,isWeapon:this.document.type==="weapon",isArmor:this.document.type==="armor",isGear:this.document.type==="gear",isOrigin:["race","background","specialization"].includes(this.document.type),isRace:race,itemTypeLabel:this.document.type.toUpperCase(),itemDetailsTab:({race:"Character Creation",weapon:"Weapon Statistics",armor:"Armor Statistics",gear:"Gear",background:"Character Creation",specialization:"Character Creation",talent:"Talent Details",ability:"Ability Details"})[this.document.type]||"Details",raceTabDescription:this._raceTab==="description",raceEditor:this._raceEditor&&this.isEditable,descriptionEditing:this._raceEditor&&this._descriptionEditing&&this.isEditable,raceFeatures:features};
  }
- static _richValue(element){if(!element)return undefined;return element.value;}
- static async save(event,form,formData){if(!this._raceEditor)return;const data=formData.object;for(const el of this.element?.querySelectorAll('.hud-item-fields prose-mirror[name]')||[]){const value=this.constructor._richValue(el);if(value!==undefined)data[el.name]=value;}await this.document.update(data);}
+ 
+ static async save(event,form,formData){if(!this._raceEditor)return;const data=formData.object;await this.document.update(data);}
  static async toggleRaceEditor(){
   if(!this.isEditable)return;
   if(this._raceEditor){await this._saveVisibleRaceFields();this._descriptionEditing=false;this._featureEditing.clear();}
@@ -51,7 +54,7 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
   const root=this.element;
   const updates={};
   const fields=this.document.type==="race"?root?.querySelectorAll("[data-race-field]"):root?.querySelectorAll(".hud-item-fields [name],.hud-race-name input[name]");
-  for(const el of fields||[]){if(!el.name||el.disabled)continue;updates[el.name]=el.tagName==="PROSE-MIRROR"?this.constructor._richValue(el):el.type==="number"?Number(el.value):el.type==="checkbox"?el.checked:el.value;}
+  for(const el of fields||[]){if(!el.name||el.disabled)continue;updates[el.name]=el.type==="number"?Number(el.value):el.type==="checkbox"?el.checked:el.value;}
   const name=root?.querySelector(".hud-race-name input[name]");if(name)updates.name=name.value;
   if(Object.keys(updates).length)await this.document.update(updates);
  }
@@ -63,7 +66,7 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
  static async editRaceDescription(){if(!this.isEditable||!this._raceEditor)return;this._descriptionEditing=true;await this.render();}
  static async saveRaceDescription(){
   if(!this.isEditable||!this._raceEditor)return;
-  const value=this.element?.this._richValue(this.element?.querySelector("[data-race-description]"));
+  const value=this.element?.querySelector("[data-race-description]")?.value;
   if(value!==undefined)await this.document.update({"system.description":value});
   this._descriptionEditing=false;await this.render();
  }
@@ -73,7 +76,7 @@ export class StarcraftItemSheet extends foundry.applications.api.HandlebarsAppli
   const i=Number(target.dataset.featureIndex),row=this.element?.querySelector('[data-feature-row="'+i+'"]');
   const entries=this.document.system.raceFeatures.map(x=>({name:x.name,description:x.description}));
   if(!row||!entries[i])return;
-  entries[i]={name:row.querySelector("[data-feature-name]")?.value||"",description:this._richValue(row.querySelector("[data-feature-description]"))||""};
+  entries[i]={name:row.querySelector("[data-feature-name]")?.value||"",description:row.querySelector("[data-feature-description]")?.value||""};
   await this.document.update({"system.raceFeatures":entries});
   this._featureEditing.delete(i);await this.render();
  }
